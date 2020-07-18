@@ -16,6 +16,8 @@ import matplotlib.ticker as mtick
 mpl.rcParams['font.family'] = 'serif'
 import scipy.stats as stats
 import itertools
+from datetime import datetime
+import os
 
 
 """
@@ -1222,6 +1224,23 @@ for chain in All_Option_Chains:
 
 
 
+    
+now = datetime.now()
+
+
+path = "./"+now.strftime("%Y_%m_%d_%H_%M_%S")
+try:
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+for i in range(len(Assets)):
+    df = All_Strategies_Summary[i]
+    outname = Assets[i]+".csv"
+    fullname = os.path.join(path, outname)   
+    df.to_csv(fullname)
 
 
 
