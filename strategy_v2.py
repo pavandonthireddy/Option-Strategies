@@ -27,7 +27,7 @@ import os
 """
 
 data = pd.read_excel('data_v1.xlsx', index_col=None)  
-max_quantity_per_leg = 1
+max_quantity_per_leg = 5
 min_e_pnl = -20
 
 Strategies = ["Bear Call Spread","Bull Call Spread", \
