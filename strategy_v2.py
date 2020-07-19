@@ -187,7 +187,7 @@ class Option_chain(object):
         setattr(self,"Put_total", len(self.Put_Strike))
         
         setattr(self,"Min_strike_width", np.min(np.diff(self.Call_Strike)))
-        setattr(self,"Min_strike_width", np.max(np.diff(self.Call_Strike)))
+        setattr(self,"Max_strike_width", np.max(np.diff(self.Call_Strike)))
         
         setattr(self,"Stock_Last", asset_df["stock_Last"].iloc[0])
         
@@ -453,11 +453,12 @@ for i in range(len(Assets)):
 All_Strategies = list()
 All_Strategies_Summary = list()
 
+tic = datetime.now()
 
 #for chain in All_Option_Chains:
 for i in range(len(All_Option_Chains)):
     chain = All_Option_Chains[i]
-    print("Processing ",i+1,"/",len(All_Option_Chains), "Underlying", chain.Name)
+    print("\n Processing ",i+1,"/",len(All_Option_Chains), "Underlying", chain.Name)
 
     Master_List_Strategies = list()
     Master_List_Strategy_Summary = pd.DataFrame()
@@ -466,7 +467,7 @@ for i in range(len(All_Option_Chains)):
     
     if "Bull Call Spread" in Strategies:
         Strategy_name ="Bull Call Spread"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         call_1_pos = list(np.arange(chain.Call_total))
         call_2_pos = list(np.arange(chain.Call_total))
         call_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
@@ -492,13 +493,13 @@ for i in range(len(All_Option_Chains)):
             bull_call_spread_df = bull_call_spread_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bull_call_spread_df)
             Master_List_Strategies.append(bull_call_spread_strat)  
-            print("Added ", len(bull_call_spread), " Strategies")
+            print("\t \t Added ", len(bull_call_spread), " Strategies")
     
     
     
     if "Bear Call Spread" in Strategies:
         Strategy_name = "Bear Call Spread"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         call_1_pos = list(np.arange(chain.Call_total))
         call_2_pos = list(np.arange(chain.Call_total))
         call_1_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
@@ -525,11 +526,11 @@ for i in range(len(All_Option_Chains)):
             bear_call_spread_df = bear_call_spread_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bear_call_spread_df)
             Master_List_Strategies.append(bear_call_spread_strat)  
-            print("Added ", len(bear_call_spread), " Strategies")
+            print("\t \t Added ", len(bear_call_spread), " Strategies")
         
     if "Bull Put Spread" in Strategies:
         Strategy_name ="Bull Put Spread"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         put_1_pos = list(np.arange(chain.Call_total))
         put_2_pos = list(np.arange(chain.Call_total))
         put_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
@@ -555,12 +556,12 @@ for i in range(len(All_Option_Chains)):
             bull_put_spread_df = bull_put_spread_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bull_put_spread_df)
             Master_List_Strategies.append(bull_put_spread_strat)
-            print("Added ", len(bull_put_spread), " Strategies")
+            print("\t \t Added ", len(bull_put_spread), " Strategies")
     
     
     if "Bear Put Spread" in Strategies:
         Strategy_name ="Bear Put Spread"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         put_1_pos = list(np.arange(chain.Call_total))
         put_2_pos = list(np.arange(chain.Call_total))
         put_1_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
@@ -586,13 +587,13 @@ for i in range(len(All_Option_Chains)):
             bear_put_spread_df = bear_put_spread_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bear_put_spread_df)
             Master_List_Strategies.append(bear_put_spread_strat)
-            print("Added ", len(bear_put_spread), " Strategies")
+            print("\t \t Added ", len(bear_put_spread), " Strategies")
     
           
     
     if "Bull Put Ladder" in Strategies:
         Strategy_name ="Bull Put Ladder"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         put_1_pos = list(np.arange(chain.Call_total))
         put_2_pos = list(np.arange(chain.Call_total))
         put_3_pos = list(np.arange(chain.Call_total))
@@ -621,12 +622,12 @@ for i in range(len(All_Option_Chains)):
             bull_put_ladder_df = bull_put_ladder_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bull_put_ladder_df)
             Master_List_Strategies.append(bull_put_ladder_strat)
-            print("Added ", len(bull_put_ladder), " Strategies")
+            print("\t \t Added ", len(bull_put_ladder), " Strategies")
     
     
     if "Bear Call Ladder" in Strategies:
         Strategy_name ="Bear Call Ladder"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         call_1_pos = list(np.arange(chain.Call_total))
         call_2_pos = list(np.arange(chain.Call_total))
         call_3_pos = list(np.arange(chain.Call_total))
@@ -655,11 +656,11 @@ for i in range(len(All_Option_Chains)):
             bear_call_ladder_df = bear_call_ladder_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bear_call_ladder_df)
             Master_List_Strategies.append(bear_call_ladder_strat)  
-            print("Added ", len(bear_call_ladder), " Strategies")
+            print("\t \t Added ", len(bear_call_ladder), " Strategies")
     
     if "Long Straddle" in Strategies:
         Strategy_name = "Long Straddle"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         pos = list(np.arange(chain.Call_total))
         call_quan = list(np.arange(1,max_quantity_per_leg+1))
         put_quan = list(np.arange(1,max_quantity_per_leg+1))
@@ -683,12 +684,12 @@ for i in range(len(All_Option_Chains)):
             long_straddle_df = long_straddle_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_straddle_df)
             Master_List_Strategies.append(long_straddle_strat)   
-            print("Added ", len(long_straddle), " Strategies")
+            print("\t \t Added ", len(long_straddle), " Strategies")
     
     
     if "Long Strangle" in Strategies:
         Strategy_name = "Long Strangle"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         call_pos = list(np.arange(chain.Call_total))
         put_pos = list(np.arange(chain.Call_total))
         call_quan = list(np.arange(1,max_quantity_per_leg+1))
@@ -714,11 +715,11 @@ for i in range(len(All_Option_Chains)):
             long_strangle_df = long_strangle_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_strangle_df)
             Master_List_Strategies.append(long_strangle_strat)
-            print("Added ", len(long_strangle), " Strategies")
+            print("\t \t Added ", len(long_strangle), " Strategies")
     
     if "Short Straddle" in Strategies:
         Strategy_name = "Short Straddle"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         pos = list(np.arange(chain.Call_total))
         call_quan = list(-1*np.arange(1,max_quantity_per_leg+1))
         put_quan = list(-1*np.arange(1,max_quantity_per_leg+1))
@@ -742,13 +743,13 @@ for i in range(len(All_Option_Chains)):
             short_straddle_df = short_straddle_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(short_straddle_df)
             Master_List_Strategies.append(short_straddle_strat)
-            print("Added ", len(short_straddle), " Strategies")
+            print("\t \t Added ", len(short_straddle), " Strategies")
     
     
     
     if "Short Strangle" in Strategies:
         Strategy_name = "Short Strangle"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         call_pos = list(np.arange(chain.Call_total))
         put_pos = list(np.arange(chain.Call_total))
         call_quan = list(-1*np.arange(1,max_quantity_per_leg+1))
@@ -775,12 +776,12 @@ for i in range(len(All_Option_Chains)):
             short_strangle_df = short_strangle_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(short_strangle_df)
             Master_List_Strategies.append(short_strangle_strat)
-            print("Added ", len(short_strangle), " Strategies")
+            print("\t \t Added ", len(short_strangle), " Strategies")
     
     
     if "Long Call Butterfly" in Strategies:
         Strategy_name = "Long Call Butterfly"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         call_pos_1 = list(np.arange(chain.Call_total))
         call_pos_2 = list(np.arange(chain.Call_total))
         call_pos_3 = list(np.arange(chain.Call_total))
@@ -809,12 +810,12 @@ for i in range(len(All_Option_Chains)):
             long_call_butterfly_df = long_call_butterfly_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_call_butterfly_df)
             Master_List_Strategies.append(long_call_butterfly_strat)  
-            print("Added ", len(long_call_butterfly), " Strategies")
+            print("\t \t Added ", len(long_call_butterfly), " Strategies")
     
     
     if "Long Put Butterfly" in Strategies:
         Strategy_name = "Long Put Butterfly"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         put_pos_1 = list(np.arange(chain.Call_total))
         put_pos_2 = list(np.arange(chain.Call_total))
         put_pos_3 = list(np.arange(chain.Call_total))
@@ -843,7 +844,7 @@ for i in range(len(All_Option_Chains)):
             long_put_butterfly_df = long_put_butterfly_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_put_butterfly_df)
             Master_List_Strategies.append(long_put_butterfly_strat)
-            print("Added ", len(long_put_butterfly), " Strategies")
+            print("\t \t Added ", len(long_put_butterfly), " Strategies")
     
     
     
@@ -851,7 +852,7 @@ for i in range(len(All_Option_Chains)):
     
     if "Short Call Butterfly" in Strategies:
         Strategy_name = "Short Call Butterfly"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         call_pos_1 = list(np.arange(chain.Call_total))
         call_pos_2 = list(np.arange(chain.Call_total))
         call_pos_3 = list(np.arange(chain.Call_total))
@@ -880,14 +881,14 @@ for i in range(len(All_Option_Chains)):
             short_call_butterfly_df = short_call_butterfly_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(short_call_butterfly_df)
             Master_List_Strategies.append(short_call_butterfly_strat)
-            print("Added ", len(short_call_butterfly), " Strategies")
+            print("\t \t Added ", len(short_call_butterfly), " Strategies")
     
     
     
     
     if "Short Put Butterfly" in Strategies:
         Strategy_name = "Short Put Butterfly"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         put_pos_1 = list(np.arange(chain.Call_total))
         put_pos_2 = list(np.arange(chain.Call_total))
         put_pos_3 = list(np.arange(chain.Call_total))
@@ -916,13 +917,13 @@ for i in range(len(All_Option_Chains)):
             short_put_butterfly_df = short_put_butterfly_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(short_put_butterfly_df)
             Master_List_Strategies.append(short_put_butterfly_strat)
-            print("Added ", len(short_put_butterfly), " Strategies")
+            print("\t \t Added ", len(short_put_butterfly), " Strategies")
     
     
     
     if "Long Iron Butterfly" in Strategies:
         Strategy_name = "Long Iron Butterfly"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         strike_pos_1 = list(np.arange(chain.Call_total))
         strike_pos_2 = list(np.arange(chain.Call_total))
         strike_pos_3 = list(np.arange(chain.Call_total))
@@ -952,12 +953,12 @@ for i in range(len(All_Option_Chains)):
             long_iron_butterfly_df = long_iron_butterfly_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_iron_butterfly_df)
             Master_List_Strategies.append(long_iron_butterfly_strat) 
-            print("Added ", len(long_iron_butterfly), " Strategies")
+            print("\t \t Added ", len(long_iron_butterfly), " Strategies")
     
     
     if "Short Iron Butterfly" in Strategies:
         Strategy_name = "Short Iron Butterfly"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         strike_pos_1 = list(np.arange(chain.Call_total))
         strike_pos_2 = list(np.arange(chain.Call_total))
         strike_pos_3 = list(np.arange(chain.Call_total))
@@ -987,7 +988,7 @@ for i in range(len(All_Option_Chains)):
             short_iron_butterfly_df = short_iron_butterfly_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(short_iron_butterfly_df)
             Master_List_Strategies.append(short_iron_butterfly_strat)
-            print("Added ", len(short_iron_butterfly), " Strategies")
+            print("\t \t Added ", len(short_iron_butterfly), " Strategies")
     
     
     
@@ -997,7 +998,7 @@ for i in range(len(All_Option_Chains)):
     
     if "Long Call Condor" in Strategies:
         Strategy_name = "Long Call Condor"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         strike_pos_1 = list(np.arange(chain.Call_total))
         strike_pos_2 = list(np.arange(chain.Call_total))
         strike_pos_3 = list(np.arange(chain.Call_total))
@@ -1031,12 +1032,12 @@ for i in range(len(All_Option_Chains)):
             long_call_condor_df = long_call_condor_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_call_condor_df)
             Master_List_Strategies.append(long_call_condor_strat)  
-            print("Added ", len(long_call_condor), " Strategies")
+            print("\t \t Added ", len(long_call_condor), " Strategies")
     
     
     if "Long Put Condor" in Strategies:
         Strategy_name = "Long Put Condor"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         strike_pos_1 = list(np.arange(chain.Call_total))
         strike_pos_2 = list(np.arange(chain.Call_total))
         strike_pos_3 = list(np.arange(chain.Call_total))
@@ -1069,13 +1070,13 @@ for i in range(len(All_Option_Chains)):
             long_put_condor_df = long_put_condor_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_put_condor_df)
             Master_List_Strategies.append(long_put_condor_strat)  
-            print("Added ", len(long_put_condor), " Strategies")
+            print("\t \t Added ", len(long_put_condor), " Strategies")
     
     
     
     if "Short Call Condor" in Strategies:
         Strategy_name = "Short Call Condor"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         strike_pos_1 = list(np.arange(chain.Call_total))
         strike_pos_2 = list(np.arange(chain.Call_total))
         strike_pos_3 = list(np.arange(chain.Call_total))
@@ -1108,12 +1109,12 @@ for i in range(len(All_Option_Chains)):
             short_call_condor_df = long_call_condor_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(short_call_condor_df)
             Master_List_Strategies.append(short_call_condor_strat)
-            print("Added ", len(short_call_condor), " Strategies")
+            print("\t \t Added ", len(short_call_condor), " Strategies")
     
     
     if "Short Put Condor" in Strategies:
         Strategy_name = "Short Put Condor"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         strike_pos_1 = list(np.arange(chain.Call_total))
         strike_pos_2 = list(np.arange(chain.Call_total))
         strike_pos_3 = list(np.arange(chain.Call_total))
@@ -1146,14 +1147,14 @@ for i in range(len(All_Option_Chains)):
             short_put_condor_df = short_put_condor_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(short_put_condor_df)
             Master_List_Strategies.append(short_put_condor_strat)
-            print("Added ", len(short_put_condor), " Strategies")
+            print("\t \t Added ", len(short_put_condor), " Strategies")
     
     
     
     
     if "Long Iron Condor" in Strategies:
         Strategy_name = "Long Iron Condor"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         strike_pos_1 = list(np.arange(chain.Call_total))
         strike_pos_2 = list(np.arange(chain.Call_total))
         strike_pos_3 = list(np.arange(chain.Call_total))
@@ -1186,11 +1187,11 @@ for i in range(len(All_Option_Chains)):
             long_iron_condor_df = long_iron_condor_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_iron_condor_df)
             Master_List_Strategies.append(long_iron_condor_strat)
-            print("Added ", len(long_iron_condor), " Strategies")
+            print("\t \t Added ", len(long_iron_condor), " Strategies")
             
     if "Short Iron Condor" in Strategies:
         Strategy_name = "Short Iron Condor"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         strike_pos_1 = list(np.arange(chain.Call_total))
         strike_pos_2 = list(np.arange(chain.Call_total))
         strike_pos_3 = list(np.arange(chain.Call_total))
@@ -1223,11 +1224,11 @@ for i in range(len(All_Option_Chains)):
             short_iron_condor_df = short_iron_condor_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(short_iron_condor_df)
             Master_List_Strategies.append(short_iron_condor_strat)
-            print("Added ", len(short_iron_condor), " Strategies")
+            print("\t \t Added ", len(short_iron_condor), " Strategies")
     
     if "Long Box" in Strategies:
         Strategy_name = "Long Box"
-        print("Processing ", Strategy_name, " Strategy")
+        print("\t Processing ", Strategy_name, " Strategy")
         
         strike_pos_1 = list(np.arange(chain.Call_total))
         strike_pos_2 = list(np.arange(chain.Call_total))
@@ -1258,7 +1259,7 @@ for i in range(len(All_Option_Chains)):
             long_box_df = long_box_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_box_df)
             Master_List_Strategies.append(long_box_strat)  
-            print("Added ", len(long_box), " Strategies")
+            print("\t \t Added ", len(long_box), " Strategies")
 
 
     """
@@ -1278,9 +1279,9 @@ path = "./"+now.strftime("%Y_%m_%d_%H_%M_%S")
 try:
     os.mkdir(path)
 except OSError:
-    print ("Creation of the directory %s failed" % path)
+    print ("\n Creation of the directory %s failed" % path)
 else:
-    print ("Successfully created the directory %s " % path)
+    print ("\n Successfully created the directory %s " % path)
 
 for i in range(len(Assets)):
     df = All_Strategies_Summary[i]
