@@ -28,7 +28,7 @@ import os
 
 data = pd.read_excel('data_v1.xlsx', index_col=None)  
 max_quantity_per_leg = 5
-min_e_pnl = -20
+min_e_pnl = 0
 
 Strategies = ["Bear Call Spread","Bull Call Spread", \
               "Bull Put Spread", "Bear Put Spread",\
@@ -448,6 +448,9 @@ print("List of all Underlyings")
 for i in range(len(Assets)): 
     print(i+1, Assets[i])
     All_Option_Chains.append(Option_chain(Assets[i],final_dataset))
+
+
+tic = datetime.now()
 
 
 All_Strategies = list()
@@ -1270,8 +1273,11 @@ for i in range(len(All_Option_Chains)):
 
 
 
+toc = datetime.now()
 
+print("\n Time Elapsed :", toc-tic)
     
+   
 now = datetime.now()
 
 
