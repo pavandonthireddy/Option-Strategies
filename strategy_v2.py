@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jul  9 23:51:08 2020
@@ -43,6 +42,7 @@ Strategies = ["Bear Call Spread","Bull Call Spread", \
               "Long Iron Condor", "Short Iron Condor", \
               "Long Box"\
               ]
+
 
 
 """
@@ -943,9 +943,9 @@ for i in range(len(All_Option_Chains)):
             if pos_1 < pos_2 and pos_2 < pos_3  :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,1] = quant_1
-                allocation[pos_2,1] = -1*quant_2
+                allocation[pos_2,1] = -1*quant_1
                 allocation[pos_2,0] = -1*quant_2
-                allocation[pos_3,0] = quant_1
+                allocation[pos_3,0] = quant_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl:
@@ -978,9 +978,9 @@ for i in range(len(All_Option_Chains)):
             if pos_1 < pos_2 and pos_2 < pos_3  :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,1] = -1*quant_1
-                allocation[pos_2,1] = quant_2
+                allocation[pos_2,1] = quant_1
                 allocation[pos_2,0] = quant_2
-                allocation[pos_3,0] = -1*quant_1
+                allocation[pos_3,0] = -1*quant_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl:
@@ -1008,23 +1008,22 @@ for i in range(len(All_Option_Chains)):
         strike_pos_4 = list(np.arange(chain.Call_total))
         quan_1 = list(np.arange(1,max_quantity_per_leg+1))
         quan_2 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_3 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_4 = list(np.arange(1,max_quantity_per_leg+1))
+
     
     
         
-        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2, quan_3, quan_4]
+        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2]
         
         long_call_condor_strat = list()
         long_call_condor = list()
         for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3, pos_4, q_1, q_2, q_3, q_4 = t
+            pos_1, pos_2, pos_3, pos_4, q_1, q_2= t
             if pos_1 < pos_2 and pos_2 < pos_3 and pos_3 < pos_4  :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,0] = q_1
-                allocation[pos_2,0] = -1*q_2
-                allocation[pos_3,0] = -1*q_3
-                allocation[pos_4,0] = q_4
+                allocation[pos_2,0] = -1*q_1
+                allocation[pos_3,0] = -1*q_2
+                allocation[pos_4,0] = q_1
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl:
@@ -1047,22 +1046,20 @@ for i in range(len(All_Option_Chains)):
         strike_pos_4 = list(np.arange(chain.Call_total))
         quan_1 = list(np.arange(1,max_quantity_per_leg+1))
         quan_2 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_3 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_4 = list(np.arange(1,max_quantity_per_leg+1))
     
         
-        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2, quan_3, quan_4]
+        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2]
         
         long_put_condor_strat = list()
         long_put_condor = list()
         for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3, pos_4, q_1, q_2, q_3, q_4 = t
+            pos_1, pos_2, pos_3, pos_4, q_1, q_2 = t
             if pos_1 < pos_2 and pos_2 < pos_3 and pos_3 < pos_4  :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,1] = q_1
-                allocation[pos_2,1] = -1*q_2
-                allocation[pos_3,1] = -1*q_3
-                allocation[pos_4,1] = q_4
+                allocation[pos_2,1] = -1*q_1
+                allocation[pos_3,1] = -1*q_2
+                allocation[pos_4,1] = q_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl:
@@ -1086,22 +1083,20 @@ for i in range(len(All_Option_Chains)):
         strike_pos_4 = list(np.arange(chain.Call_total))
         quan_1 = list(np.arange(1,max_quantity_per_leg+1))
         quan_2 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_3 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_4 = list(np.arange(1,max_quantity_per_leg+1))
-    
+
         
-        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2, quan_3, quan_4]
+        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2]
         
         short_call_condor_strat = list()
         short_call_condor = list()
         for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3, pos_4, q_1, q_2, q_3, q_4 = t
+            pos_1, pos_2, pos_3, pos_4, q_1, q_2 = t
             if pos_1 < pos_2 and pos_2 < pos_3 and pos_3 < pos_4  :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,0] = -1*q_1
-                allocation[pos_2,0] = q_2
-                allocation[pos_3,0] = q_3
-                allocation[pos_4,0] = -1*q_4
+                allocation[pos_2,0] = q_1
+                allocation[pos_3,0] = q_2
+                allocation[pos_4,0] = -1*q_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl:
@@ -1124,22 +1119,21 @@ for i in range(len(All_Option_Chains)):
         strike_pos_4 = list(np.arange(chain.Call_total))
         quan_1 = list(np.arange(1,max_quantity_per_leg+1))
         quan_2 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_3 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_4 = list(np.arange(1,max_quantity_per_leg+1))
+
     
         
-        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2, quan_3, quan_4]
+        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2]
         
         short_put_condor_strat = list()
         short_put_condor = list()
         for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3, pos_4, q_1, q_2, q_3, q_4 = t
+            pos_1, pos_2, pos_3, pos_4, q_1, q_2 = t
             if pos_1 < pos_2 and pos_2 < pos_3 and pos_3 < pos_4  :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,1] = -1*q_1
-                allocation[pos_2,1] = q_2
-                allocation[pos_3,1] = q_3
-                allocation[pos_4,1] = -1*q_4
+                allocation[pos_2,1] = q_1
+                allocation[pos_3,1] = q_2
+                allocation[pos_4,1] = -1*q_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl:
@@ -1164,22 +1158,20 @@ for i in range(len(All_Option_Chains)):
         strike_pos_4 = list(np.arange(chain.Call_total))
         quan_1 = list(np.arange(1,max_quantity_per_leg+1))
         quan_2 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_3 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_4 = list(np.arange(1,max_quantity_per_leg+1))
-    
+
         
-        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2, quan_3, quan_4]
+        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2]
         
         long_iron_condor_strat = list()
         long_iron_condor = list()
         for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3, pos_4, quant_1, quant_2, quant_3, quant_4 = t
+            pos_1, pos_2, pos_3, pos_4, quant_1, quant_2 = t
             if pos_1 < pos_2 and pos_2 < pos_3 and pos_3 < pos_4  :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,1] = quant_1
-                allocation[pos_2,1] = -1*quant_2
-                allocation[pos_3,0] = -1*quant_3
-                allocation[pos_4,0] = quant_4
+                allocation[pos_2,1] = -1*quant_1
+                allocation[pos_3,0] = -1*quant_2
+                allocation[pos_4,0] = quant_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl:
@@ -1201,22 +1193,21 @@ for i in range(len(All_Option_Chains)):
         strike_pos_4 = list(np.arange(chain.Call_total))
         quan_1 = list(np.arange(1,max_quantity_per_leg+1))
         quan_2 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_3 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_4 = list(np.arange(1,max_quantity_per_leg+1))
+
     
         
-        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2, quan_3, quan_4]
+        iterables = [strike_pos_1, strike_pos_2, strike_pos_3, strike_pos_4, quan_1, quan_2]
         
         short_iron_condor_strat = list()
         short_iron_condor = list()
         for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3, pos_4, quant_1, quant_2, quant_3, quant_4 = t
+            pos_1, pos_2, pos_3, pos_4, quant_1, quant_2 = t
             if pos_1 < pos_2 and pos_2 < pos_3 and pos_3 < pos_4  :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,1] = -1*quant_1
-                allocation[pos_2,1] =  quant_2
-                allocation[pos_3,0] =  quant_3
-                allocation[pos_4,0] = -1*quant_4
+                allocation[pos_2,1] =  quant_1
+                allocation[pos_3,0] =  quant_2
+                allocation[pos_4,0] = -1*quant_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl:
@@ -1237,21 +1228,20 @@ for i in range(len(All_Option_Chains)):
         strike_pos_2 = list(np.arange(chain.Call_total))
         quan_1 = list(np.arange(1,max_quantity_per_leg+1))
         quan_2 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_3 = list(np.arange(1,max_quantity_per_leg+1))
-        quan_4 = list(np.arange(1,max_quantity_per_leg+1))
+
         
-        iterables = [strike_pos_1, strike_pos_2, quan_1, quan_2, quan_3, quan_4]
+        iterables = [strike_pos_1, strike_pos_2, quan_1, quan_2]
         
         long_box_strat = list()
         long_box = list()
         for t in itertools.product(*iterables):
-            pos_1, pos_2, q_1, q_2, q_3, q_4= t
+            pos_1, pos_2, q_1, q_2= t
             if pos_1 < pos_2   :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,0] = q_1
-                allocation[pos_1,1] = -1*q_2
-                allocation[pos_2,1] = q_3
-                allocation[pos_2,0] = -1*q_4
+                allocation[pos_1,1] = -1*q_1
+                allocation[pos_2,1] = q_2
+                allocation[pos_2,0] = -1*q_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl:
@@ -1312,10 +1302,12 @@ for i in range(len(Assets)):
 ### Check 
 #for i in range(5):
 #
-#allocation = np.zeros((5,2))
-#allocation[1,0]= 1
-#allocation[4,1] = 2
-##allocation[4,0] = 1
+#chain = All_Option_Chains[2]
+#allocation = np.zeros((chain.Call_total,2))
+#allocation[1,1]= 2
+#allocation[2,1] = -2
+#allocation[3,0] = -1
+#allocation[4,0] = 1
 #opt_strategy = Strategy(allocation,chain,"New")
 #pnl = opt_strategy.final_pnl(chain.Stock_Last)
 #payoff = opt_strategy.payoff(chain.Stock_Last)
