@@ -28,6 +28,9 @@ import os
 data = pd.read_excel('data_v1.xlsx', index_col=None)  
 max_quantity_per_leg = 5
 min_e_pnl = 0
+min_p_profit = 30
+max_cost = 500
+max_loss = 500
 
 Strategies = ["Bear Call Spread","Bull Call Spread", \
               "Bull Put Spread", "Bear Put Spread",\
@@ -487,7 +490,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_2,0] = quan_2
                 strat = Strategy(allocation,chain,Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     bull_call_spread_strat.append(strat)
                     bull_call_spread.append(details)
                 
@@ -520,7 +523,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_2,0] = quan_2
                 strat = Strategy(allocation,chain,Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     bear_call_spread_strat.append(strat)
                     bear_call_spread.append(details)
                 
@@ -550,7 +553,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_2,1] = quan_2
                 strat = Strategy(allocation,chain,Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl :
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     bull_put_spread_strat.append(strat)
                     bull_put_spread.append(details)
                 
@@ -581,7 +584,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_2,1] = quan_2
                 strat = Strategy(allocation,chain,Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl :
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     bear_put_spread_strat.append(strat)
                     bear_put_spread.append(details)
                 
@@ -616,7 +619,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_3,1] = quan_3
                 strat = Strategy(allocation,chain,Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     bull_put_ladder_strat.append(strat)
                     bull_put_ladder.append(details)
                 
@@ -650,7 +653,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_3,0] = quan_3
                 strat = Strategy(allocation,chain,Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl :
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     bear_call_ladder_strat.append(strat)
                     bear_call_ladder.append(details)
                 
@@ -679,7 +682,7 @@ for i in range(len(All_Option_Chains)):
             allocation[pos,1] = quan_2
             strat = Strategy(allocation, chain, Strategy_name)
             details = strat.summary()
-            if details["Expected PnL"] > min_e_pnl:
+            if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                 long_straddle_strat.append(strat)
                 long_straddle.append(details)
         if len(long_straddle)>0:
@@ -710,7 +713,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_2,1] = quan_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     long_strangle_strat.append(strat)
                     long_strangle.append(details)
         if len(long_strangle)>0:
@@ -738,7 +741,7 @@ for i in range(len(All_Option_Chains)):
             allocation[pos,1] = quan_2
             strat = Strategy(allocation, chain, Strategy_name)
             details = strat.summary()
-            if details["Expected PnL"] > min_e_pnl:
+            if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                 short_straddle_strat.append(strat)
                 short_straddle.append(details)
         if len(short_straddle)>0:
@@ -770,7 +773,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_2,1] = quan_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     short_strangle_strat.append(strat)
                     short_strangle.append(details)
         
@@ -805,7 +808,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_3,0] = quan_1
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss:
                     long_call_butterfly_strat.append(strat)
                     long_call_butterfly.append(details)
         if len(long_call_butterfly)>0:
@@ -839,7 +842,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_3,1] = quan_1
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     long_put_butterfly_strat.append(strat)
                     long_put_butterfly.append(details)
         if len(long_put_butterfly)>0:
@@ -876,7 +879,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_3,0] = quan_1
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] < max_cost and details["Max_Loss"]<max_loss :
                     short_call_butterfly_strat.append(strat)
                     short_call_butterfly.append(details)
         if len(short_call_butterfly)>0:
@@ -912,7 +915,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_3,1] = quan_1
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] < max_cost and details["Max_Loss"]< max_loss :
                     short_put_butterfly_strat.append(strat)
                     short_put_butterfly.append(details)
         if len(short_put_butterfly)>0:
@@ -948,7 +951,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_3,0] = quant_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     long_iron_butterfly_strat.append(strat)
                     long_iron_butterfly.append(details)
         if len(long_iron_butterfly)>0:
@@ -983,7 +986,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_3,0] = -1*quant_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     short_iron_butterfly_strat.append(strat)
                     short_iron_butterfly.append(details)
         if len(short_iron_butterfly)>0:
@@ -1026,7 +1029,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_4,0] = q_1
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] < max_cost and details["Max_Loss"]<max_loss :
                     long_call_condor_strat.append(strat)
                     long_call_condor.append(details)
         if len(long_call_condor)>0:
@@ -1062,7 +1065,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_4,1] = q_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
                     long_put_condor_strat.append(strat)
                     long_put_condor.append(details)
         if len(long_put_condor)>0:
@@ -1099,7 +1102,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_4,0] = -1*q_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] < max_cost and details["Max_Loss"]<max_loss :
                     short_call_condor_strat.append(strat)
                     short_call_condor.append(details)
         if len(short_call_condor)>0:
@@ -1136,7 +1139,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_4,1] = -1*q_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] < max_cost and details["Max_Loss"] < max_loss :
                     short_put_condor_strat.append(strat)
                     short_put_condor.append(details)
         if len(short_put_condor)>0:
@@ -1174,7 +1177,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_4,0] = quant_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] < max_cost and details["Max_Loss"] < max_loss :
                     long_iron_condor_strat.append(strat)
                     long_iron_condor.append(details)
         if len(long_iron_condor)>0:
@@ -1210,7 +1213,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_4,0] = -1*quant_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] < max_cost and details["Max_Loss"] < max_loss :
                     short_iron_condor_strat.append(strat)
                     short_iron_condor.append(details)
         if len(short_iron_condor)>0:
@@ -1244,7 +1247,7 @@ for i in range(len(All_Option_Chains)):
                 allocation[pos_2,0] = -1*q_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl:
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] < max_cost and details["Max_Loss"]< max_loss:
                     long_box_strat.append(strat)
                     long_box.append(details)
         if len(long_box)>0:
@@ -1278,12 +1281,13 @@ except OSError:
     print ("\n Creation of the directory %s failed" % path)
 else:
     print ("\n Successfully created the directory %s " % path)
+    for i in range(len(Assets)):
+        df = All_Strategies_Summary[i]
+        outname = Assets[i]+".csv"
+        fullname = os.path.join(path, outname)   
+        df.to_csv(fullname)
 
-for i in range(len(Assets)):
-    df = All_Strategies_Summary[i]
-    outname = Assets[i]+".csv"
-    fullname = os.path.join(path, outname)   
-    df.to_csv(fullname)
+
 
 
 
