@@ -15,9 +15,10 @@ import matplotlib.ticker as mtick
 mpl.rcParams['font.family'] = 'serif'
 import scipy.stats as stats
 import itertools
-from datetime import datetime
+from datetime import datetime, date
 import os
-
+import yfinance as yf
+from american_option_pricing import american_option
 
 """
 #######################################################################################
@@ -25,18 +26,27 @@ import os
 #######################################################################################
 """
 
-data = pd.read_excel('data_v1.xlsx', index_col=None)  
+data = pd.read_excel('data_v2.xlsx', index_col=None)  
+current_date = date(2020,7,24)
+expiry_date = date(2020,8,7)
+days_to_expiry = np.busday_count( current_date, expiry_date)-1
+
 max_quantity_per_leg = 5
 min_e_pnl = 0
 min_p_profit = 30
-max_cost = 500
-max_loss = 500
+max_cost = 750
+max_loss = 750
+
+mode = "rule_based" #"all_combinations"/"rule_based" - Always keep rule based
+save_results = False
+
 
 Strategies = ["Bear Call Spread","Bull Call Spread", \
               "Bull Put Spread", "Bear Put Spread",\
               "Bull Put Ladder", "Bear Call Ladder",\
               "Long Straddle", "Long Strangle", \
-              "Short Straddle", "Short Strangle", \
+              "Long Strap", "Long Strip",\
+#              "Short Straddle", "Short Strangle", \
               "Long Call Butterfly", "Long Put Butterfly",\
               "Short Call Butterfly", "Short Put Butterfly",\
               "Long Iron Butterfly", "Short Iron Butterfly",\
@@ -46,6 +56,30 @@ Strategies = ["Bear Call Spread","Bull Call Spread", \
               "Long Box"\
               ]
 
+Strategies = []
+
+
+"""
+#######################################################################################
+                                    Get Risk Free Date                   
+#######################################################################################
+"""
+
+#rf_eod_data = yf.download("^IRX", start="1993-01-01", end="2019-11-15")
+
+rf_eod_data = yf.download("^IRX", start="2020-07-01", end= current_date.strftime("%Y-%m-%d"))
+
+for col in rf_eod_data.columns:
+    rf_eod_data[col] = pd.to_numeric(rf_eod_data[col],errors='coerce')
+
+rf_eod_data=rf_eod_data.fillna(method='ffill')
+
+rf_eod_data['interest']=((1+(rf_eod_data['Adj Close']/100))**(1/252))-1
+
+rf_eod_data['annualized_interest']=252*(((1+(rf_eod_data['Adj Close']/100))**(1/252))-1)
+
+rf_value =rf_eod_data['annualized_interest'].iloc[-1]
+print("Current Risk Free Rate is :",'{:.3f}%'.format(rf_value*100))
 
 
 """
@@ -75,7 +109,8 @@ data['Type']=data.apply(lambda row: label_type(row), axis=1)
 
 data['Expiry_Date']= data.Symbol.str.extract('(\d+)')
 data['Expiry_Date'] = data['Expiry_Date'].apply(lambda x: pd.to_datetime(str(x), format='%y%m%d'))
-data['Expiry_Date'] = data['Expiry_Date'].fillna(pd.Timestamp('20200724'))
+expiry_date_str = expiry_date.strftime("%Y%m%d")
+data['Expiry_Date'] = data['Expiry_Date'].fillna(pd.Timestamp(expiry_date_str))
 data['Expiry_Date'] = data['Expiry_Date'].apply(lambda x: x.strftime('%Y_%m_%d'))
 
 #TODO: Change the logic for new symbol. Works only for this year. 
@@ -194,13 +229,17 @@ class Option_chain(object):
         
         setattr(self,"Stock_Last", asset_df["stock_Last"].iloc[0])
         
+        setattr(self,"Description", asset_df["stock_Description"].iloc[0])
+        
         setattr(self,"Stock_Volt", asset_df["stock_Impl_Vol"].iloc[0])
-        setattr(self,"Time_to_exp", 10)
+        setattr(self,"Time_to_exp", days_to_expiry)
         
         std = self.Stock_Last*(self.Stock_Volt*((self.Time_to_exp/252)**0.5))
         self.sigma = std
         
-        R_year = 0.05 # Risk Free Interest Rate
+        R_year = rf_value # Risk Free Interest Rate
+        
+        self.Rf = rf_value
         
         vol_day = (self.Stock_Volt)*math.sqrt(1/252)
         
@@ -446,10 +485,8 @@ Assets = list(final_dataset['Group'].unique())
 
 
 All_Option_Chains = list()
-print("List of all Underlyings")
 
 for i in range(len(Assets)): 
-    print(i+1, Assets[i])
     All_Option_Chains.append(Option_chain(Assets[i],final_dataset))
 
 
@@ -464,7 +501,7 @@ tic = datetime.now()
 #for chain in All_Option_Chains:
 for i in range(len(All_Option_Chains)):
     chain = All_Option_Chains[i]
-    print("\n Processing ",i+1,"/",len(All_Option_Chains), "Underlying", chain.Name)
+    print("\n Processing ",i+1,"/",len(All_Option_Chains), "-", chain.Name, " : ", chain.Description)
 
     Master_List_Strategies = list()
     Master_List_Strategy_Summary = pd.DataFrame()
@@ -474,25 +511,45 @@ for i in range(len(All_Option_Chains)):
     if "Bull Call Spread" in Strategies:
         Strategy_name ="Bull Call Spread"
         print("\t Processing ", Strategy_name, " Strategy")
-        call_1_pos = list(np.arange(chain.Call_total))
-        call_2_pos = list(np.arange(chain.Call_total))
-        call_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
-        call_2_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
-        iterables = [call_1_pos,call_2_pos,call_1_quantity,call_2_quantity]
-        
         bull_call_spread_strat = list()
         bull_call_spread = list()
-        for t in itertools.product(*iterables):
-            pos_1, pos_2, quan_1, quan_2 = t
-            if pos_1<pos_2:
-                allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,0] = quan_1
-                allocation[pos_2,0] = quan_2
-                strat = Strategy(allocation,chain,Strategy_name)
-                details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
-                    bull_call_spread_strat.append(strat)
-                    bull_call_spread.append(details)
+        
+        if mode == "all_combinations":
+            call_1_pos = list(np.arange(chain.Call_total))
+            call_2_pos = list(np.arange(chain.Call_total))
+            call_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
+            iterables = [call_1_pos,call_2_pos,call_1_quantity,call_2_quantity]
+            
+    
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, quan_1, quan_2 = t
+                if pos_1<pos_2:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,0] = quan_1
+                    allocation[pos_2,0] = quan_2
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bull_call_spread_strat.append(strat)
+                        bull_call_spread.append(details)
+                        
+        elif mode=="rule_based":
+            call_1_pos = list(np.arange(chain.Call_total))
+            call_2_pos = list(np.arange(chain.Call_total))
+            call_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            iterables = [call_1_pos,call_2_pos,call_1_quantity]
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, quan_1= t
+                if pos_1<pos_2:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,0] = quan_1
+                    allocation[pos_2,0] = -1*quan_1
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bull_call_spread_strat.append(strat)
+                        bull_call_spread.append(details)
                 
         if len(bull_call_spread)>0:
             bull_call_spread_df = pd.DataFrame(bull_call_spread)
@@ -506,26 +563,46 @@ for i in range(len(All_Option_Chains)):
     if "Bear Call Spread" in Strategies:
         Strategy_name = "Bear Call Spread"
         print("\t Processing ", Strategy_name, " Strategy")
-        call_1_pos = list(np.arange(chain.Call_total))
-        call_2_pos = list(np.arange(chain.Call_total))
-        call_1_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
-        call_2_quantity = list(np.arange(1,max_quantity_per_leg+1))
-        
-        iterables = [call_1_pos,call_2_pos,call_1_quantity,call_2_quantity]
-        
         bear_call_spread_strat = list()
         bear_call_spread = list()
-        for t in itertools.product(*iterables):
-            pos_1, pos_2, quan_1, quan_2 = t
-            if pos_1<pos_2:
-                allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,0] = quan_1
-                allocation[pos_2,0] = quan_2
-                strat = Strategy(allocation,chain,Strategy_name)
-                details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
-                    bear_call_spread_strat.append(strat)
-                    bear_call_spread.append(details)
+        if mode == "all_combinations":
+            call_1_pos = list(np.arange(chain.Call_total))
+            call_2_pos = list(np.arange(chain.Call_total))
+            call_1_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            
+            iterables = [call_1_pos,call_2_pos,call_1_quantity,call_2_quantity]
+            
+    
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, quan_1, quan_2 = t
+                if pos_1<pos_2:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,0] = quan_1
+                    allocation[pos_2,0] = quan_2
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bear_call_spread_strat.append(strat)
+                        bear_call_spread.append(details)
+        elif mode=="rule_based":
+            call_1_pos = list(np.arange(chain.Call_total))
+            call_2_pos = list(np.arange(chain.Call_total))
+            call_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            
+            iterables = [call_1_pos,call_2_pos,call_1_quantity]
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, quan_1 = t
+                if pos_1<pos_2:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,0] = -1*quan_1
+                    allocation[pos_2,0] = quan_1
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bear_call_spread_strat.append(strat)
+                        bear_call_spread.append(details)
+            
                 
         if len(bear_call_spread)>0:
             bear_call_spread_df = pd.DataFrame(bear_call_spread)
@@ -537,25 +614,47 @@ for i in range(len(All_Option_Chains)):
     if "Bull Put Spread" in Strategies:
         Strategy_name ="Bull Put Spread"
         print("\t Processing ", Strategy_name, " Strategy")
-        put_1_pos = list(np.arange(chain.Call_total))
-        put_2_pos = list(np.arange(chain.Call_total))
-        put_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
-        put_2_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
-        iterables = [put_1_pos,put_2_pos,put_1_quantity,put_2_quantity]
-        
         bull_put_spread_strat = list()
         bull_put_spread = list()
-        for t in itertools.product(*iterables):
-            pos_1, pos_2, quan_1, quan_2 = t
-            if pos_1<pos_2:
-                allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,1] = quan_1
-                allocation[pos_2,1] = quan_2
-                strat = Strategy(allocation,chain,Strategy_name)
-                details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
-                    bull_put_spread_strat.append(strat)
-                    bull_put_spread.append(details)
+        
+        if mode=="all_combinations":
+            put_1_pos = list(np.arange(chain.Call_total))
+            put_2_pos = list(np.arange(chain.Call_total))
+            put_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            put_2_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
+            iterables = [put_1_pos,put_2_pos,put_1_quantity,put_2_quantity]
+            
+    
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, quan_1, quan_2 = t
+                if pos_1<pos_2:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,1] = quan_1
+                    allocation[pos_2,1] = quan_2
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bull_put_spread_strat.append(strat)
+                        bull_put_spread.append(details)
+        elif mode=="rule_based":
+            put_1_pos = list(np.arange(chain.Call_total))
+            put_2_pos = list(np.arange(chain.Call_total))
+            put_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            iterables = [put_1_pos,put_2_pos,put_1_quantity]
+            
+    
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, quan_1 = t
+                if pos_1<pos_2:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,1] = quan_1
+                    allocation[pos_2,1] = -1*quan_1
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bull_put_spread_strat.append(strat)
+                        bull_put_spread.append(details)
+            
                 
         if len(bull_put_spread)>0:
             bull_put_spread_df = pd.DataFrame(bull_put_spread)
@@ -568,25 +667,46 @@ for i in range(len(All_Option_Chains)):
     if "Bear Put Spread" in Strategies:
         Strategy_name ="Bear Put Spread"
         print("\t Processing ", Strategy_name, " Strategy")
-        put_1_pos = list(np.arange(chain.Call_total))
-        put_2_pos = list(np.arange(chain.Call_total))
-        put_1_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
-        put_2_quantity = list(np.arange(1,max_quantity_per_leg+1))
-        iterables = [put_1_pos,put_2_pos,put_1_quantity,put_2_quantity]
-        
         bear_put_spread_strat = list()
         bear_put_spread = list()
-        for t in itertools.product(*iterables):
-            pos_1, pos_2, quan_1, quan_2 = t
-            if pos_1<pos_2:
-                allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,1] = quan_1
-                allocation[pos_2,1] = quan_2
-                strat = Strategy(allocation,chain,Strategy_name)
-                details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
-                    bear_put_spread_strat.append(strat)
-                    bear_put_spread.append(details)
+        if mode=="all_combinations":
+            put_1_pos = list(np.arange(chain.Call_total))
+            put_2_pos = list(np.arange(chain.Call_total))
+            put_1_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
+            put_2_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            iterables = [put_1_pos,put_2_pos,put_1_quantity,put_2_quantity]
+            
+    
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, quan_1, quan_2 = t
+                if pos_1<pos_2:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,1] = quan_1
+                    allocation[pos_2,1] = quan_2
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bear_put_spread_strat.append(strat)
+                        bear_put_spread.append(details)
+        elif mode=="rule_based":
+            put_1_pos = list(np.arange(chain.Call_total))
+            put_2_pos = list(np.arange(chain.Call_total))
+            put_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            iterables = [put_1_pos,put_2_pos,put_1_quantity]
+            
+    
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, quan_1 = t
+                if pos_1<pos_2:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,1] = -1*quan_1
+                    allocation[pos_2,1] = quan_1
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bear_put_spread_strat.append(strat)
+                        bear_put_spread.append(details)
+            
                 
         if len(bear_put_spread)>0:       
             bear_put_spread_df = pd.DataFrame(bear_put_spread)
@@ -594,34 +714,61 @@ for i in range(len(All_Option_Chains)):
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bear_put_spread_df)
             Master_List_Strategies.append(bear_put_spread_strat)
             print("\t \t Added ", len(bear_put_spread), " Strategies")
-    
+
+## TODO: Add Call/Put Back/Ratio Spreads
+## TODO: Add Other 2 ladders
           
     
     if "Bull Put Ladder" in Strategies:
         Strategy_name ="Bull Put Ladder"
         print("\t Processing ", Strategy_name, " Strategy")
-        put_1_pos = list(np.arange(chain.Call_total))
-        put_2_pos = list(np.arange(chain.Call_total))
-        put_3_pos = list(np.arange(chain.Call_total))
-        put_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
-        put_2_quantity = list(np.arange(1,max_quantity_per_leg+1))
-        put_3_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
-        iterables = [put_1_pos,put_2_pos, put_3_pos, put_1_quantity,put_2_quantity, put_3_quantity]
-        
         bull_put_ladder_strat = list()
         bull_put_ladder = list()
-        for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3, quan_1, quan_2, quan_3 = t
-            if pos_1<pos_2 and pos_2 < pos_3 :
-                allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,1] = quan_1
-                allocation[pos_2,1] = quan_2
-                allocation[pos_3,1] = quan_3
-                strat = Strategy(allocation,chain,Strategy_name)
-                details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
-                    bull_put_ladder_strat.append(strat)
-                    bull_put_ladder.append(details)
+        
+        if mode=="all_combinations":
+            put_1_pos = list(np.arange(chain.Call_total))
+            put_2_pos = list(np.arange(chain.Call_total))
+            put_3_pos = list(np.arange(chain.Call_total))
+            put_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            put_2_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            put_3_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
+            iterables = [put_1_pos,put_2_pos, put_3_pos, put_1_quantity,put_2_quantity, put_3_quantity]
+            
+    
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, pos_3, quan_1, quan_2, quan_3 = t
+                if pos_1<pos_2 and pos_2 < pos_3 :
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,1] = quan_1
+                    allocation[pos_2,1] = quan_2
+                    allocation[pos_3,1] = quan_3
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bull_put_ladder_strat.append(strat)
+                        bull_put_ladder.append(details)
+        elif mode=="rule_based":
+            put_1_pos = list(np.arange(chain.Call_total))
+            put_2_pos = list(np.arange(chain.Call_total))
+            put_3_pos = list(np.arange(chain.Call_total))
+            put_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            put_2_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            iterables = [put_1_pos,put_2_pos, put_3_pos, put_1_quantity,put_2_quantity]
+            
+    
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, pos_3, quan_1, quan_2 = t
+                if pos_1<pos_2 and pos_2 < pos_3 :
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,1] = quan_1
+                    allocation[pos_2,1] = quan_1
+                    allocation[pos_3,1] = -1*quan_2
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bull_put_ladder_strat.append(strat)
+                        bull_put_ladder.append(details)
+            
                 
         if len(bull_put_ladder)>0:
             bull_put_ladder_df = pd.DataFrame(bull_put_ladder)
@@ -634,28 +781,51 @@ for i in range(len(All_Option_Chains)):
     if "Bear Call Ladder" in Strategies:
         Strategy_name ="Bear Call Ladder"
         print("\t Processing ", Strategy_name, " Strategy")
-        call_1_pos = list(np.arange(chain.Call_total))
-        call_2_pos = list(np.arange(chain.Call_total))
-        call_3_pos = list(np.arange(chain.Call_total))
-        call_1_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
-        call_2_quantity = list(np.arange(1,max_quantity_per_leg+1))
-        call_3_quantity = list(np.arange(1,max_quantity_per_leg+1))
-        iterables = [call_1_pos,call_2_pos, call_3_pos, call_1_quantity,call_2_quantity, call_3_quantity]
-        
         bear_call_ladder_strat = list()
         bear_call_ladder = list()
-        for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3, quan_1, quan_2, quan_3 = t
-            if pos_1<pos_2 and pos_2 < pos_3 :
-                allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,0] = quan_1
-                allocation[pos_2,0] = quan_2
-                allocation[pos_3,0] = quan_3
-                strat = Strategy(allocation,chain,Strategy_name)
-                details = strat.summary()
-                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
-                    bear_call_ladder_strat.append(strat)
-                    bear_call_ladder.append(details)
+        if mode=="all_combinations":
+            call_1_pos = list(np.arange(chain.Call_total))
+            call_2_pos = list(np.arange(chain.Call_total))
+            call_3_pos = list(np.arange(chain.Call_total))
+            call_1_quantity = list(-1*np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            call_3_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            iterables = [call_1_pos,call_2_pos, call_3_pos, call_1_quantity,call_2_quantity, call_3_quantity]
+            
+    
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, pos_3, quan_1, quan_2, quan_3 = t
+                if pos_1<pos_2 and pos_2 < pos_3 :
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,0] = quan_1
+                    allocation[pos_2,0] = quan_2
+                    allocation[pos_3,0] = quan_3
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bear_call_ladder_strat.append(strat)
+                        bear_call_ladder.append(details)
+        elif mode=="rule_based":
+            call_1_pos = list(np.arange(chain.Call_total))
+            call_2_pos = list(np.arange(chain.Call_total))
+            call_3_pos = list(np.arange(chain.Call_total))
+            call_1_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = list(np.arange(1,max_quantity_per_leg+1))
+            iterables = [call_1_pos,call_2_pos, call_3_pos, call_1_quantity,call_2_quantity]
+            
+    
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, pos_3, quan_1, quan_2= t
+                if pos_1<pos_2 and pos_2 < pos_3 :
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,0] = -1*quan_1
+                    allocation[pos_2,0] = quan_2
+                    allocation[pos_3,0] = quan_2
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                        bear_call_ladder_strat.append(strat)
+                        bear_call_ladder.append(details)
                 
         if len(bear_call_ladder)>0:        
             bear_call_ladder_df = pd.DataFrame(bear_call_ladder)
@@ -668,18 +838,17 @@ for i in range(len(All_Option_Chains)):
         Strategy_name = "Long Straddle"
         print("\t Processing ", Strategy_name, " Strategy")
         pos = list(np.arange(chain.Call_total))
-        call_quan = list(np.arange(1,max_quantity_per_leg+1))
-        put_quan = list(np.arange(1,max_quantity_per_leg+1))
+        quan = list(np.arange(1,max_quantity_per_leg+1))
         
-        iterables = [pos,call_quan, put_quan]
+        iterables = [pos,quan]
         
         long_straddle_strat = list()
         long_straddle = list()
         for t in itertools.product(*iterables):
-            pos,quan_1, quan_2 = t
+            pos,quan_1 = t
             allocation = np.zeros((chain.Call_total,2))
             allocation[pos,0] = quan_1
-            allocation[pos,1] = quan_2
+            allocation[pos,1] = quan_1
             strat = Strategy(allocation, chain, Strategy_name)
             details = strat.summary()
             if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
@@ -691,26 +860,85 @@ for i in range(len(All_Option_Chains)):
             Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_straddle_df)
             Master_List_Strategies.append(long_straddle_strat)   
             print("\t \t Added ", len(long_straddle), " Strategies")
+
+    if "Long Strap" in Strategies:
+        Strategy_name = "Long Strap"
+        print("\t Processing ", Strategy_name, " Strategy")
+        pos = list(np.arange(chain.Call_total))
+        
+        call_quan = list(np.arange(1,max_quantity_per_leg+1))
+        put_quan = list(np.arange(1,max_quantity_per_leg+1))
+        
+        iterables = [pos,call_quan, put_quan]
+        
+        long_strap_strat = list()
+        long_strap = list()
+        for t in itertools.product(*iterables):
+            pos,quan_1, quan_2 = t
+            if quan_1 > quan_2:
+                allocation = np.zeros((chain.Call_total,2))
+                allocation[pos,0] = quan_1
+                allocation[pos,1] = quan_2
+                strat = Strategy(allocation, chain, Strategy_name)
+                details = strat.summary()
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                    long_strap_strat.append(strat)
+                    long_strap.append(details)
+        if len(long_strap)>0:
+            long_strap_df = pd.DataFrame(long_strap)
+            long_strap_df = long_strap_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
+            Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_strap_df)
+            Master_List_Strategies.append(long_strap_strat)   
+            print("\t \t Added ", len(long_strap), " Strategies")
     
+    if "Long Strip" in Strategies:
+        Strategy_name = "Long Strip"
+        print("\t Processing ", Strategy_name, " Strategy")
+        pos = list(np.arange(chain.Call_total))
+        
+        call_quan = list(np.arange(1,max_quantity_per_leg+1))
+        put_quan = list(np.arange(1,max_quantity_per_leg+1))
+        
+        iterables = [pos,call_quan, put_quan]
+        
+        long_strip_strat = list()
+        long_strip = list()
+        for t in itertools.product(*iterables):
+            pos,quan_1, quan_2 = t
+            if quan_1 < quan_2:
+                allocation = np.zeros((chain.Call_total,2))
+                allocation[pos,0] = quan_1
+                allocation[pos,1] = quan_2
+                strat = Strategy(allocation, chain, Strategy_name)
+                details = strat.summary()
+                if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
+                    long_strip_strat.append(strat)
+                    long_strip.append(details)
+        if len(long_strip)>0:
+            long_strip_df = pd.DataFrame(long_strip)
+            long_strip_df = long_strip_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
+            Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(long_strip_df)
+            Master_List_Strategies.append(long_strip_strat)   
+            print("\t \t Added ", len(long_strip), " Strategies")
     
     if "Long Strangle" in Strategies:
         Strategy_name = "Long Strangle"
         print("\t Processing ", Strategy_name, " Strategy")
         call_pos = list(np.arange(chain.Call_total))
         put_pos = list(np.arange(chain.Call_total))
-        call_quan = list(np.arange(1,max_quantity_per_leg+1))
-        put_quan = list(np.arange(1,max_quantity_per_leg+1))
+        quan = list(np.arange(1,max_quantity_per_leg+1))
+
         
-        iterables = [call_pos,put_pos,call_quan, put_quan]
+        iterables = [call_pos,put_pos, quan]
         
         long_strangle_strat = list()
         long_strangle = list()
         for t in itertools.product(*iterables):
-            pos_1,pos_2,quan_1, quan_2 = t
+            pos_1,pos_2,quan_1 = t
             if pos_1 < pos_2:
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,0] = quan_1
-                allocation[pos_2,1] = quan_2
+                allocation[pos_2,1] = quan_1
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
@@ -727,18 +955,18 @@ for i in range(len(All_Option_Chains)):
         Strategy_name = "Short Straddle"
         print("\t Processing ", Strategy_name, " Strategy")
         pos = list(np.arange(chain.Call_total))
-        call_quan = list(-1*np.arange(1,max_quantity_per_leg+1))
-        put_quan = list(-1*np.arange(1,max_quantity_per_leg+1))
+        quan = list(-1*np.arange(1,max_quantity_per_leg+1))
+
         
-        iterables = [pos, call_quan, put_quan]
+        iterables = [pos, quan]
         
         short_straddle_strat = list()
         short_straddle = list()
         for t in itertools.product(*iterables):
-            pos,quan_1, quan_2 = t
+            pos, quan_1 = t
             allocation = np.zeros((chain.Call_total,2))
             allocation[pos,0] = quan_1
-            allocation[pos,1] = quan_2
+            allocation[pos,1] = quan_1
             strat = Strategy(allocation, chain, Strategy_name)
             details = strat.summary()
             if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
@@ -758,19 +986,18 @@ for i in range(len(All_Option_Chains)):
         print("\t Processing ", Strategy_name, " Strategy")
         call_pos = list(np.arange(chain.Call_total))
         put_pos = list(np.arange(chain.Call_total))
-        call_quan = list(-1*np.arange(1,max_quantity_per_leg+1))
-        put_quan = list(-1*np.arange(1,max_quantity_per_leg+1))
+        quan = list(-1*np.arange(1,max_quantity_per_leg+1))
         
-        iterables = [call_pos,put_pos,call_quan, put_quan]
+        iterables = [call_pos,put_pos, quan]
         
         short_strangle_strat = list()
         short_strangle = list()
         for t in itertools.product(*iterables):
-            pos_1,pos_2,quan_1, quan_2 = t
+            pos_1,pos_2, quan_1 = t
             if pos_1 < pos_2:
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,0] = quan_1
-                allocation[pos_2,1] = quan_2
+                allocation[pos_2,1] = quan_1
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
@@ -791,21 +1018,21 @@ for i in range(len(All_Option_Chains)):
         call_pos_1 = list(np.arange(chain.Call_total))
         call_pos_2 = list(np.arange(chain.Call_total))
         call_pos_3 = list(np.arange(chain.Call_total))
-        call_quan_1 = list(np.arange(1,max_quantity_per_leg+1))
-        call_quan_2 = list(-1*np.arange(2,max_quantity_per_leg+1))
+        quant_1 = list(np.arange(1,max_quantity_per_leg+1))
+        quant_2 = list(np.arange(1,max_quantity_per_leg+1))
     
         
-        iterables = [call_pos_1, call_pos_2, call_pos_3, call_quan_1, call_quan_2]
+        iterables = [call_pos_1, call_pos_2, call_pos_3, quant_1, quant_2]
         
         long_call_butterfly_strat = list()
         long_call_butterfly = list()
         for t in itertools.product(*iterables):
             pos_1, pos_2, pos_3, quan_1, quan_2 = t
-            if pos_1 < pos_2 and pos_2 < pos_3 and quan_1 < abs(quan_2) :
+            if pos_1 < pos_2 and pos_2 < pos_3 :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,0] = quan_1
-                allocation[pos_2,0] = quan_2
-                allocation[pos_3,0] = quan_1
+                allocation[pos_2,0] = -1*(quan_1+quan_2)
+                allocation[pos_3,0] = quan_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss:
@@ -826,7 +1053,7 @@ for i in range(len(All_Option_Chains)):
         put_pos_2 = list(np.arange(chain.Call_total))
         put_pos_3 = list(np.arange(chain.Call_total))
         put_quan_1 = list(np.arange(1,max_quantity_per_leg+1))
-        put_quan_2 = list(-1*np.arange(2,max_quantity_per_leg+1))
+        put_quan_2 = list(np.arange(1,max_quantity_per_leg+1))
     
         
         iterables = [put_pos_1, put_pos_2, put_pos_3, put_quan_1, put_quan_2]
@@ -835,11 +1062,11 @@ for i in range(len(All_Option_Chains)):
         long_put_butterfly = list()
         for t in itertools.product(*iterables):
             pos_1, pos_2, pos_3, quan_1, quan_2 = t
-            if pos_1 < pos_2 and pos_2 < pos_3 and quan_1 < abs(quan_2) :
+            if pos_1 < pos_2 and pos_2 < pos_3 :
                 allocation = np.zeros((chain.Call_total,2))
                 allocation[pos_1,1] = quan_1
-                allocation[pos_2,1] = quan_2
-                allocation[pos_3,1] = quan_1
+                allocation[pos_2,1] = -1*(quan_1+quan_2)
+                allocation[pos_3,1] = quan_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] <max_cost and details["Max_Loss"]<max_loss :
@@ -862,8 +1089,8 @@ for i in range(len(All_Option_Chains)):
         call_pos_1 = list(np.arange(chain.Call_total))
         call_pos_2 = list(np.arange(chain.Call_total))
         call_pos_3 = list(np.arange(chain.Call_total))
-        call_quan_1 = list(-1*np.arange(1,max_quantity_per_leg+1))
-        call_quan_2 = list(np.arange(2,max_quantity_per_leg+1))
+        call_quan_1 = list(np.arange(1,max_quantity_per_leg+1))
+        call_quan_2 = list(np.arange(1,max_quantity_per_leg+1))
     
         
         iterables = [call_pos_1, call_pos_2, call_pos_3, call_quan_1, call_quan_2]
@@ -872,11 +1099,11 @@ for i in range(len(All_Option_Chains)):
         short_call_butterfly = list()
         for t in itertools.product(*iterables):
             pos_1, pos_2, pos_3, quan_1, quan_2 = t
-            if pos_1 < pos_2 and pos_2 < pos_3 and abs(quan_1) < quan_2 :
+            if pos_1 < pos_2 and pos_2 < pos_3 :
                 allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,0] = quan_1
-                allocation[pos_2,0] = quan_2
-                allocation[pos_3,0] = quan_1
+                allocation[pos_1,0] = -1*quan_1
+                allocation[pos_2,0] = quan_1+quan_2
+                allocation[pos_3,0] = -1*quan_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] < max_cost and details["Max_Loss"]<max_loss :
@@ -898,8 +1125,8 @@ for i in range(len(All_Option_Chains)):
         put_pos_1 = list(np.arange(chain.Call_total))
         put_pos_2 = list(np.arange(chain.Call_total))
         put_pos_3 = list(np.arange(chain.Call_total))
-        put_quan_1 = list(-1*np.arange(1,max_quantity_per_leg+1))
-        put_quan_2 = list(np.arange(2,max_quantity_per_leg+1))
+        put_quan_1 = list(np.arange(1,max_quantity_per_leg+1))
+        put_quan_2 = list(np.arange(1,max_quantity_per_leg+1))
     
         
         iterables = [put_pos_1, put_pos_2, put_pos_3, put_quan_1, put_quan_2]
@@ -908,11 +1135,11 @@ for i in range(len(All_Option_Chains)):
         short_put_butterfly = list()
         for t in itertools.product(*iterables):
             pos_1, pos_2, pos_3, quan_1, quan_2 = t
-            if pos_1 < pos_2 and pos_2 < pos_3 and abs(quan_1) < quan_2 :
+            if pos_1 < pos_2 and pos_2 < pos_3 :
                 allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,1] = quan_1
-                allocation[pos_2,1] = quan_2
-                allocation[pos_3,1] = quan_1
+                allocation[pos_1,1] = -1*quan_1
+                allocation[pos_2,1] = quan_1+quan_2
+                allocation[pos_3,1] = -1*quan_2
                 strat = Strategy(allocation, chain, Strategy_name)
                 details = strat.summary()
                 if details["Expected PnL"] > min_e_pnl and details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"] < max_cost and details["Max_Loss"]< max_loss :
@@ -1275,17 +1502,19 @@ now = datetime.now()
 
 
 path = "./"+now.strftime("%Y_%m_%d_%H_%M_%S")
-try:
-    os.mkdir(path)
-except OSError:
-    print ("\n Creation of the directory %s failed" % path)
-else:
-    print ("\n Successfully created the directory %s " % path)
-    for i in range(len(Assets)):
-        df = All_Strategies_Summary[i]
-        outname = Assets[i]+".csv"
-        fullname = os.path.join(path, outname)   
-        df.to_csv(fullname)
+
+if save_results == True:
+    try:
+        os.mkdir(path)
+    except OSError:
+        print ("\n Creation of the directory %s failed" % path)
+    else:
+        print ("\n Successfully created the directory %s " % path)
+        for i in range(len(Assets)):
+            df = All_Strategies_Summary[i]
+            outname = Assets[i]+".csv"
+            fullname = os.path.join(path, outname)   
+            df.to_csv(fullname)
 
 
 
@@ -1306,7 +1535,7 @@ else:
 ### Check 
 #for i in range(5):
 #
-#chain = All_Option_Chains[2]
+#chain = All_Option_Chains[0]
 #allocation = np.zeros((chain.Call_total,2))
 #allocation[1,1]= 2
 #allocation[2,1] = -2
@@ -1325,15 +1554,150 @@ else:
 #print(cos)
 #print("Expected PnL :", opt_strategy.expected_pnl() )
 #opt_strategy.plot_pnl()
+            
+            
+for i in range(len(All_Option_Chains)):
 
-
-
-
-
-
-
-
-
+    chain = All_Option_Chains[i]
+    
+    call_prices = (chain.Call_Ask+chain.Call_Bid)/2
+    
+    
+    """
+    x = [w,F1,sigma1,F2,sigma2]
+    
+    """
+    def objective(chain,x):
+        T = chain.Time_to_exp/252
+        Rf = chain.Rf
+        
+        total = len(chain.Call_Strike)
+        
+        w= x[0]
+        F1= x[1]
+        sigma1 = x[2]
+        F2 = x[3]
+        sigma2 = x[4]
+        
+        c_market = (chain.Call_Ask+chain.Call_Bid)/2
+        
+        S1 = F1*math.exp(-1*Rf*T)
+        S2 = F2*math.exp(-1*Rf*T)
+        c_the =np.array([w*(american_option('c',S1,chain.Call_Strike[i],T,Rf,sigma1)[0])\
+                + (1-w)*(american_option('c',S2,chain.Call_Strike[i],T,Rf,sigma2)[0])\
+                for i in range(total)])
+        rmse = np.sqrt(((c_market - c_the) ** 2).mean())
+        
+        return rmse
+    
+    from functools import partial
+    
+    fun_to_min = partial(objective, chain)
+    
+    
+    
+    from scipy.optimize import Bounds,minimize
+    bounds = Bounds([0.0001, 0.03, 0.006, 0.03, 0.006], [1.0, np.inf,0.98,np.inf,0.98])
+    
+    T = chain.Time_to_exp/252
+    Rf = chain.Rf
+    S = chain.Stock_Last
+    
+    F = S*math.exp(Rf*T)
+    
+    eq_cons = {'type': 'eq',
+               'fun' : lambda x: np.array([x[0]*(x[1])+(1-x[0])*(x[3])- F])}
+    
+    x0 = np.array([0.7,F,0.25,F,0.75])
+    
+    res = minimize(fun_to_min, x0, method='SLSQP',\
+                   constraints=[eq_cons], options={'ftol': 1e-9, 'disp': True},\
+                   bounds=bounds)
+    
+    print(res.x)
+    
+    
+    
+    
+    
+    def stock_density(S,sigma,r,T,S_T):
+        dens = (1/(S_T*sigma*math.sqrt(2*math.pi*T)))*(math.exp(-0.5*(((math.log(S_T)-math.log(S)-r*T+0.5*T*sigma**2)/(sigma*math.sqrt(T)))**2)))
+        return dens
+    
+    def risk_neutral_density(x,chain,S_T):
+        w = x[0]
+        F1 = x[1]
+        sigma1=x[2]
+        F2 = x[3]
+        sigma2 = x[4]
+        r =chain.Rf
+        T =chain.Time_to_exp/252
+        S1=F1*math.exp(-r*T)
+        S2= F2*math.exp(-r*T)
+        dens = w*stock_density(S1,sigma1,r,T,S_T)+(1-w)*stock_density(S2,sigma2,r,T,S_T)
+        return dens
+    
+    def real_world_density(x,chain,gamma,S_T):
+        r =chain.Rf
+        T =chain.Time_to_exp/252
+        
+        w = x[0]
+        F1 = x[1]
+        sigma1=x[2]
+        F2 = x[3]
+        sigma2 = x[4]
+        
+        F1_new = F1*math.exp(gamma*T*sigma1**2)
+        F2_new = F2*math.exp(gamma*T*sigma2**2)
+        
+        one_by_w_new = 1+((1-w)/w)*((F2/F1)**gamma)*(math.exp(0.5*T*(gamma**2-gamma)*(sigma2**2-sigma1**2)))
+        
+        w_new = 1/one_by_w_new
+        
+        
+        
+    
+        S1=F1_new*math.exp(-r*T)
+        S2= F2_new*math.exp(-r*T)
+        dens = w_new*stock_density(S1,sigma1,r,T,S_T)+(1-w_new)*stock_density(S2,sigma2,r,T,S_T)
+        return dens
+    
+    
+    from functools import partial
+    
+    risk_neutral_dens_par = partial(risk_neutral_density,res.x,chain)
+    vec_risk_neutral_dens_par = np.vectorize(risk_neutral_dens_par)
+    
+    real_world_dens_par_1 = partial(real_world_density,res.x,chain,2)
+    vec_real_world_dens_par_1 = np.vectorize(real_world_dens_par_1)
+    
+    real_world_dens_par_2 = partial(real_world_density,res.x,chain,4)
+    vec_real_world_dens_par_2 = np.vectorize(real_world_dens_par_2)
+    
+    
+    
+    prices = np.arange(S-0.5*S,S+0.5*S,0.25)
+    
+    risk_neutral =vec_risk_neutral_dens_par(prices)
+    real_world_1 = vec_real_world_dens_par_1(prices)
+    real_world_2 = vec_real_world_dens_par_2(prices)
+    
+    
+    fig,ax = plt.subplots(1, 1, figsize=(9, 5))
+    plt.plot(prices,risk_neutral,lw=2.5, color='blue', label = "Risk Neutral Density $S_T$")
+    plt.plot(prices,real_world_1,lw=2.5, color='red', label="Real World Density $S_T$")
+    plt.plot(prices,real_world_2,lw=2.5, color='orange', label="Real World Density $S_T$")
+    
+    plt.axvline(x = chain.Stock_Last, color="green", linestyle='--', label = "$S_0 : {}$".format(chain.Stock_Last)) 
+    plt.xlabel('$S_T$')
+    plt.ylabel('Density')
+    ax.set_axisbelow(True)
+    ax.minorticks_on()
+    ax.grid(which='major', linestyle='-')
+    ax.grid(which='minor', linestyle=':')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(chain.Name+".png")
 
 
 
