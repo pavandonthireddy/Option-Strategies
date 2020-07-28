@@ -34,8 +34,8 @@ expiry_date = date(2020,8,7)
 days_to_expiry = np.busday_count( current_date, expiry_date)-1
 
 max_quantity_per_leg = 1
-min_e_pnl = 0
-min_p_profit = 15
+min_e_pnl = -250
+min_p_profit = 0
 max_cost = 750
 max_loss = 750
 
