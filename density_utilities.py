@@ -97,7 +97,7 @@ def calculate_densities(chain):
     
     F = S*math.exp(Rf*T)
     
-    bounds =[(0.0,1.0),(0.5*S,1.5*S),(0.0051,0.999999),(0.5*S,1.5*S),(0.0051,0.99999)]    
+    bounds =[(0.0,1.0),(0.5*S,1.5*S),(0.01,0.99),(0.5*S,1.5*S),(0.01,0.99)]    
     
 
     eq_cons = {'type': 'eq',
@@ -109,9 +109,9 @@ def calculate_densities(chain):
 
     cons=(eq_cons,ineq_cons)
     
-    res = shgo(fun_to_min, bounds, n=120, iters=5, constraints=cons,options={'disp':True}, sampling_method='sobol')    
+    res = shgo(fun_to_min, bounds, n=120, iters=5,  minimizer_kwargs={'method': "L-BFGS-B"},constraints=cons,options={'disp':False}, sampling_method='sobol')    
     
-    print(res.x)
+    # print(res.x)
     
     res_dict['Name'] = chain.Name
     res_dict['total_calls'] = chain.Call_total
@@ -119,10 +119,11 @@ def calculate_densities(chain):
     res_dict['Prob Bearish']=res.x[0]  
     res_dict['Prob Bullish']=1-res.x[0]
     
+    #check again
     if res.x[0]>0.5:
-        res_dict['Direction_Price'] = 'Bearish'
-    else:
         res_dict['Direction_Price'] = 'Bullish'
+    else:
+        res_dict['Direction_Price'] = 'Bearish'
         
     res_dict['F1']=res.x[1]
     res_dict['Stock_Last']= chain.Stock_Last
