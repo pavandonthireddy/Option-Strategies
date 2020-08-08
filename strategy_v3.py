@@ -31,27 +31,27 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 #######################################################################################
 """
 
-data = pd.read_excel('data_v6_etfs.xlsx', index_col=None)  
-current_date = date(2020,7,31)
-expiry_date = date(2020,8,14)
+data = pd.read_excel('data_aug_8_etfs_iv_less_than_50.xlsx', index_col=None)  
+current_date = date(2020,8,7)
+expiry_date = date(2020,8,21)
 days_to_expiry = np.busday_count( current_date, expiry_date)-1
 
 max_quantity_per_leg = 1
 min_e_pnl = 0
-min_p_profit = 15
+min_p_profit = 40
 max_cost = 1250
 max_loss = 1250
-risk_to_reward_ratio = 0.25
+risk_to_reward_ratio = 0.3
 
 save_results = True
 save_plots = True
 
 
-Strategies = ["Bull Put Spread","Bull Call Spread", \
-               "Bear Call Spread", "Bear Put Spread"\
-              ]
+# Strategies = ["Bull Put Spread","Bull Call Spread", \
+#                "Bear Call Spread", "Bear Put Spread"\
+#               ]
 
-Strategies =  ["Bear Call Spread", "Bear Put Spread" ]
+# Strategies =  ["Bear Call Spread", "Bear Put Spread" ]
 
 
 Strategies = ["Bull Call Spread","Bear Put Spread"]
@@ -355,11 +355,11 @@ for i in range(len(Assets)):
         pe.plot_actual_pred(act.iloc[-50:], pred, path, Assets[i]+'_pred')
         
 density_results = pd.DataFrame(dens_results)
-densname = os.path.join(path, "density_results.csv")   
+densname = os.path.join(path, "02_density_results.csv")   
 density_results.to_csv(densname,index=False)
 
 prediction_results = pd.DataFrame(predictions)
-predname = os.path.join(path, "prediction_results.csv")   
+predname = os.path.join(path, "01_prediction_results.csv")   
 prediction_results.to_csv(predname,index=False)
         
 
@@ -549,17 +549,21 @@ class Strategy(object):
         # for i in range(len(Put_strikes)):
         #     strat_summary["P_"+str(Put_strikes[i])] = self.Put_allocation[i]
         
+        k=1
         for i in range(len(Call_strikes)):
             if self.Call_allocation[i]!=0:
-                strat_summary["Call_Strike_"+str(i+1)] = Call_strikes[i]
-                strat_summary["Call_Strike_"+str(i+1)+"_alloc"] = self.Call_allocation[i]
+                strat_summary["Strike_"+str(k)+"_type"] = "Call"
+                strat_summary["Strike_"+str(k)] =  Call_strikes[i]
+                strat_summary["Strike_"+str(k)+"_alloc"] = self.Call_allocation[i]
+                k+=1
 
         for i in range(len(Put_strikes)):
             if self.Put_allocation[i]!=0:
-                strat_summary["Put_Strike_"+str(i+1)] = Put_strikes[i]
-                strat_summary["Put_Strike_"+str(i+1)+"_alloc"] = self.Put_allocation[i]
-
-            
+                strat_summary["Strike_"+str(k)+"_type"] = "Put"
+                strat_summary["Strike_"+str(k)] =  Put_strikes[i]
+                strat_summary["Strike_"+str(k)+"_alloc"] = self.Put_allocation[i]
+                k+=1
+                
         return strat_summary
     
 
@@ -624,7 +628,7 @@ for i in range(len(All_Option_Chains)):
                 
             if len(bull_put_spread)>0:
                 bull_put_spread_df = pd.DataFrame(bull_put_spread)
-                bull_put_spread_df = bull_put_spread_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
+                bull_put_spread_df = bull_put_spread_df.sort_values(by=["Prob of Profit"], ascending=False)
                 Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bull_put_spread_df)
                 Master_List_Strategies.append(bull_put_spread_strat)
                 print("\t \t Added ", len(bull_put_spread), " Strategies")
@@ -654,7 +658,7 @@ for i in range(len(All_Option_Chains)):
                     
             if len(bull_call_spread)>0:
                 bull_call_spread_df = pd.DataFrame(bull_call_spread)
-                bull_call_spread_df = bull_call_spread_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
+                bull_call_spread_df = bull_call_spread_df.sort_values(by=["Prob of Profit"], ascending=False)
                 Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bull_call_spread_df)
                 Master_List_Strategies.append(bull_call_spread_strat)  
                 print("\t \t Added ", len(bull_call_spread), " Strategies")
@@ -688,7 +692,7 @@ for i in range(len(All_Option_Chains)):
                     
             if len(bear_call_spread)>0:
                 bear_call_spread_df = pd.DataFrame(bear_call_spread)
-                bear_call_spread_df = bear_call_spread_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
+                bear_call_spread_df = bear_call_spread_df.sort_values(by=["Prob of Profit"], ascending=False)
                 Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bear_call_spread_df)
                 Master_List_Strategies.append(bear_call_spread_strat)  
                 print("\t \t Added ", len(bear_call_spread), " Strategies")
@@ -725,7 +729,7 @@ for i in range(len(All_Option_Chains)):
                     
             if len(bear_put_spread)>0:       
                 bear_put_spread_df = pd.DataFrame(bear_put_spread)
-                bear_put_spread_df = bear_put_spread_df.sort_values(by=["Exp_Pnl/Max_Loss","Max_Profit"], ascending=False)
+                bear_put_spread_df = bear_put_spread_df.sort_values(by=["Prob of Profit"], ascending=False)
                 Master_List_Strategy_Summary = Master_List_Strategy_Summary.append(bear_put_spread_df)
                 Master_List_Strategies.append(bear_put_spread_strat)
                 print("\t \t Added ", len(bear_put_spread), " Strategies")
@@ -746,6 +750,13 @@ print("\n Time Elapsed :", toc-tic)
 
 
 if save_results == True:
+    
+    merged = pd.concat(All_Strategies_Summary)
+    if len(merged.index)>0:
+        outname = "00_All_Strategies.csv"
+        fullname = os.path.join(path, outname)   
+        merged.to_csv(fullname, index=False)
+    
     for i in range(len(Assets)):
         df = All_Strategies_Summary[i]
         if len(df.index)>0:
@@ -755,29 +766,28 @@ if save_results == True:
 
 
 
-
 ## Check 
 #for i in range(5):
 
-# chain = All_Option_Chains[0]
+# chain = All_Option_Chains[12]
 # allocation = np.zeros((chain.Call_total,2))
-# allocation[-12,1]= -1
-# allocation[-8,1] = 1
+# allocation[12,0]= 1
+# allocation[16,0] = -1
 # #allocation[3,0] = -1
 # #allocation[4,0] = 1
 # opt_strategy = Strategy(allocation,chain,"New")
 # cost = opt_strategy.initial_cost()
-# pnl = opt_strategy.final_pnl(100)
-# payoff = opt_strategy.payoff(100)
-# cos = -1*(pnl-payoff)
+# # pnl = opt_strategy.final_pnl(100)
+# # payoff = opt_strategy.payoff(100)
+# # cos = -1*(pnl-payoff)
 
-# prob = opt_strategy.prob_profit()
+# # prob = opt_strategy.prob_profit()
 
-# #total_pnl  = opt_strategy.pnl_space()
-# print("PnL at S_T :", pnl)
-# print(cost)
-# print(payoff)
-# print(cos)
-# print("Expected PnL :", opt_strategy.expected_pnl() )
+# # #total_pnl  = opt_strategy.pnl_space()
+# # print("PnL at S_T :", pnl)
+# # print(cost)
+# # print(payoff)
+# # print(cos)
+# # print("Expected PnL :", opt_strategy.expected_pnl() )
 # opt_strategy.plot_pnl()
 

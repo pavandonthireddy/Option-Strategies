@@ -1,0 +1,2 @@
+Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Strike_1_type,Strike_1,Strike_1_alloc,Strike_2_type,Strike_2,Strike_2_alloc
+WBA,Bull Call Spread,0.06,88.0,112.0,88.0,45.33,54.67,0.0006818181818181818,1.2727272727272727,32.99999999999999,3.0,-0.9999999999999999,0.0,1.0,Call,41.0,1.0,Call,43.0,-1.0

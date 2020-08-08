@@ -1,0 +1,2 @@
+Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Strike_1_type,Strike_1,Strike_1_alloc,Strike_2_type,Strike_2,Strike_2_alloc
+URTY,Bull Call Spread,12.19,159.99999999999997,240.00000000000003,159.99999999999997,45.11,54.2,0.0761875,1.5000000000000004,23.0,2.0000000000000004,-0.9999999999999996,0.0,1.0,Call,42.0,1.0,Call,46.0,-1.0

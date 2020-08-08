@@ -1,8 +1,6 @@
 # Option Strategies
- A program to optimize option trading strategies
+ A program to generate option trading strategies with positive expected profit
 
-## Pipeline
-
-1. Multiprocessing Strategies
-2. Volatility smile/Implied probability Distribution
-3. Formulating NILP problem 
+1. Uses Data from TD Ameritrade/Yahoo Finance
+2. Forecasting Risk Neutral and Real World Densities
+3. Calculates statistics of Vertical Spreads

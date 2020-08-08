@@ -1,0 +1,2 @@
+Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Strike_1_type,Strike_1,Strike_1_alloc,Strike_2_type,Strike_2,Strike_2_alloc
+OMC,Bull Call Spread,4.47,370.0,380.0,370.0,51.73,48.27,0.01208108108108108,1.027027027027027,64.0,1.0000000000000009,-1.0000000000000002,0.9999999999999999,1.0,Call,50.0,1.0,Call,57.5,-1.0
