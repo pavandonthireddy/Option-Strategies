@@ -31,17 +31,17 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 #######################################################################################
 """
 
-data = pd.read_excel('data_aug_8_etfs_iv_less_than_50.xlsx', index_col=None)  
-current_date = date(2020,8,7)
-expiry_date = date(2020,8,21)
+data = pd.read_excel('data_it_aug_23.xlsx', index_col=None)  
+current_date = date(2020,8,21)
+expiry_date = date(2020,9,4)
 days_to_expiry = np.busday_count( current_date, expiry_date)-1
 
 max_quantity_per_leg = 1
-min_e_pnl = 0
+min_e_pnl = -10
 min_p_profit = 40
 max_cost = 1250
 max_loss = 1250
-risk_to_reward_ratio = 0.3
+risk_to_reward_ratio = 0.15
 
 save_results = True
 save_plots = True

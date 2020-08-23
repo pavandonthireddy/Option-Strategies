@@ -1,0 +1,2 @@
+Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Strike_1_type,Strike_1,Strike_1_alloc,Strike_2_type,Strike_2,Strike_2_alloc
+CSCO,Bear Put Spread,-7.5,31.0,19.0,31.0,45.29,54.71,-0.24193548387096775,0.6129032258064516,-11.999999999999995,2.0000000000000018,0.9999999999999999,0.0,0.0,Put,42.0,-1.0,Put,42.5,1.0
