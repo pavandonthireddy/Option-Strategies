@@ -69,7 +69,7 @@ def calculate_predictions(symbol):
         else:
             res['one_direction']='Bullish'
     else:
-        if two_week_ret >= -0.04:
+        if one_week_ret >= -0.04:
             res['one_direction'] ='Slight Bearish'
         else:
             res['one_direction']='Bearish'

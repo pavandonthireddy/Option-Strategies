@@ -31,14 +31,14 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 #######################################################################################
 """
 
-data = pd.read_excel('penny_145_end_1_week.xlsx', index_col=None)  
+data = pd.read_excel('penny_145_end.xlsx', index_col=None)  
 current_date = date(2020,8,28)
-expiry_date = date(2020,9,4)
+expiry_date = date(2020,9,11)
 days_to_expiry = np.busday_count( current_date, expiry_date)-1
 
 
 
-min_p_profit = 50
+min_p_profit = 40
 hor_leg_factor = 0.15
 
 
@@ -351,7 +351,8 @@ for i in range(len(Assets)):
     
     print("\t \t Predicted 2 week Direction     :", res_pred['two_direction'])
     print("\t \t Predicted 2 week return :", round(res_pred['two_Pred_ret']*100,2)," %")
-    if days_to_expiry==4:
+    
+    if days_to_expiry == 4:
         res_pred['direction'] = res_pred['one_direction']
     else:
         res_pred['direction'] = res_pred['two_direction']
@@ -538,6 +539,7 @@ class Strategy(object):
 #        strat_summary["Expected Utility"] = self.e_utility
         
         strat_summary["Cost of Strategy"] = self.initial_cost()
+        strat_summary["Total Debit"] = (-1*self.initial_cost())+self.Max_Loss
         
         strat_summary["Leg_profit"] = -1*self.initial_cost()
         strat_summary["Max_Profit"] = self.Max_Profit
@@ -546,11 +548,11 @@ class Strategy(object):
         strat_summary["Prob of Profit"] = self.Prob_profit
         strat_summary["Prob of Loss"] = self.Prob_loss
         
-        strat_summary["Exp_Pnl/Max_Loss"]=self.e_pnl/self.Max_Loss
-        
+        #strat_summary["Exp_Pnl/Max_Loss"]=self.e_pnl/self.Max_Loss
+        strat_summary["Leg_Profit_Factor"] = -1*self.initial_cost()/self.Max_Loss
         strat_summary["Profit_Factor"] = self.Max_Profit/self.Max_Loss #strat_summary["Max_Profit"]/strat_summary["Max_Loss"]
         
-        strat_summary["Leg_Profit_Factor"] = -1*self.initial_cost()/self.Max_Loss
+
         Call_strikes = self.Option_Chain.Call_Strike
         Put_strikes = self.Option_Chain.Put_Strike
         
@@ -630,11 +632,11 @@ for i in range(len(All_Option_Chains)):
             iterables = [put_1_pos,put_2_pos,put_3_pos]
             for t in itertools.product(*iterables):
                 pos_1, pos_2, pos_3 = t
-                if pos_1 < pos_2 and pos_2 < pos_3:
+                if pos_1 < pos_2 and pos_2 < pos_3 and (pos_2-pos_1)==(pos_3-pos_2):
                     allocation = np.zeros((chain.Put_total,2))
-                    allocation[pos_1,0] = put_1_quantity
-                    allocation[pos_2,0] = -1*put_2_quantity
-                    allocation[pos_3,0] = put_3_quantity
+                    allocation[pos_1,1] = put_1_quantity
+                    allocation[pos_2,1] = -1*put_2_quantity
+                    allocation[pos_3,1] = put_3_quantity
                     strat = Strategy(allocation,chain,Strategy_name)
                     details = strat.summary()
                     if details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"]<0 and details["Leg_Profit_Factor"] > hor_leg_factor:
@@ -671,7 +673,7 @@ for i in range(len(All_Option_Chains)):
             iterables = [call_1_pos,call_2_pos,call_3_pos]
             for t in itertools.product(*iterables):
                 pos_1, pos_2, pos_3 = t
-                if pos_1 < pos_2 and pos_2 < pos_3:
+                if pos_1 < pos_2 and pos_2 < pos_3 and (pos_2-pos_1)==(pos_3-pos_2):
                     allocation = np.zeros((chain.Call_total,2))
                     allocation[pos_1,0] = call_1_quantity
                     allocation[pos_2,0] = -1*call_2_quantity
