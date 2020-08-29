@@ -14,6 +14,7 @@ rstring = """function(symbol){
   library(ggplot2)
   library(sys)
   
+  set.seed(224)
   data <- getSymbols(symbol, src = "yahoo", from = "2015-01-01", to = Sys.time(), calendar = 'UnitedStates/NYSE', auto.assign = FALSE)
   tmp = to.weekly(data, indexAt = "endof")
   data = tmp[,4]
@@ -21,14 +22,16 @@ rstring = """function(symbol){
   
   data_stock = data.frame(coredata(data))
   data_train <- forecastML::create_lagged_df(data_stock, type = "train", method = "direct",
-                                             outcome_col = 1, lookback = 1:30, horizons = 1:12)
+                                             outcome_col = 1, lookback = 1:100, horizons = 1:6)
   
   windows <- forecastML::create_windows(data_train, window_length = 0)
   
   model_fn <- function(data) {
     x <- as.matrix(data[, -1, drop = FALSE])
     y <- as.matrix(data[, 1, drop = FALSE])
-    model <- glmnet::cv.glmnet(x, y)
+    model_c <- glmnet::cv.glmnet(x, y, nfolds=10, parallel = TRUE)
+    penalty <- model_c$lambda.min
+    model <- glmnet::glmnet(x,y, alpha=1, lambda = penalty)
   }
   
   model_results <- forecastML::train_model(data_train, windows, model_name = "LASSO", model_function = model_fn)
@@ -42,7 +45,7 @@ rstring = """function(symbol){
   residuals <- residuals(data_fit)
   
   data_forecast <- forecastML::create_lagged_df(data_stock, type = "forecast", method = "direct",
-                                                outcome_col = 1, lookback = 1:30, horizons = 1:12)
+                                                outcome_col = 1, lookback = 1:100, horizons = 1:6)
   
   data_forecasts <- predict(model_results, prediction_function = list(predict_fn), data = data_forecast)
   
@@ -63,7 +66,7 @@ rstring = """function(symbol){
   #last_friday = Sys.Date() - wday(Sys.Date() + 1)
   next_friday = Sys.Date() + wday(Sys.Date() + 6)
   
-  date = seq(next_friday , by = "week", length.out = 12)
+  date = seq(next_friday , by = "week", length.out = 6)
   
   to_add = data_forecasts[,4:5]
   to_add$time = date

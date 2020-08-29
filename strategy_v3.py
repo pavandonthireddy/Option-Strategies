@@ -47,13 +47,6 @@ save_results = True
 save_plots = True
 
 
-# Strategies = ["Bull Put Spread","Bull Call Spread", \
-#                "Bear Call Spread", "Bear Put Spread"\
-#               ]
-
-# Strategies =  ["Bear Call Spread", "Bear Put Spread" ]
-
-
 Strategies = ["Bull Call Spread","Bear Put Spread"]
 
 
@@ -769,10 +762,10 @@ if save_results == True:
 ## Check 
 #for i in range(5):
 
-# chain = All_Option_Chains[12]
+# chain = All_Option_Chains[0]
 # allocation = np.zeros((chain.Call_total,2))
-# allocation[12,0]= 1
-# allocation[16,0] = -1
+# allocation[2,0]= 1
+# allocation[3,0] = -1
 # #allocation[3,0] = -1
 # #allocation[4,0] = 1
 # opt_strategy = Strategy(allocation,chain,"New")

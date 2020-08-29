@@ -15,7 +15,7 @@ import os
 import numpy as np
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-# symbol = "FDX"
+#symbol = "AAPL"
 
 def calculate_predictions(symbol):
     rfunc=robjects.r(rstring)
@@ -47,19 +47,32 @@ def calculate_predictions(symbol):
     res = dict()
     
     res['Name'] = symbol
+    one_week_ret = pred_df.iloc[0,-1]
     two_week_ret = pred_df.iloc[1,-1]
-    res['Pred_ret'] = two_week_ret
+    res['one_Pred_ret'] = one_week_ret
+    res['two_Pred_ret'] = two_week_ret
     
     if two_week_ret>0:
         if two_week_ret <=0.08:
-            res['direction'] ='Slight Bullish'
+            res['two_direction'] ='Slight Bullish'
         else:
-            res['direction']='Bullish'
+            res['two_direction']='Bullish'
     else:
         if two_week_ret >= -0.08:
-            res['direction'] ='Slight Bearish'
+            res['two_direction'] ='Slight Bearish'
         else:
-            res['direction']='Bearish'
+            res['two_direction']='Bearish'
+    
+    if one_week_ret>0:
+        if one_week_ret <=0.04:
+            res['one_direction'] ='Slight Bullish'
+        else:
+            res['one_direction']='Bullish'
+    else:
+        if two_week_ret >= -0.04:
+            res['one_direction'] ='Slight Bearish'
+        else:
+            res['one_direction']='Bearish'
 
     
     return plot_actual, plot_predicted, forecast_df, res
@@ -80,6 +93,6 @@ def plot_actual_pred(actual, predicted, path, name):
     file_name = name+".png"
     plt.savefig(os.path.join(path, file_name))
     plt.close(fig)
-    
 
+#a,b,c,d =  calculate_predictions(symbol)
 # plot_actual_pred(plot_actual.iloc[-50:], plot_predicted, symbol)

@@ -152,12 +152,30 @@ def calculate_densities(chain):
     return res_dict, prices, risk_neutral, real_world_1, real_world_2
      
 
-def plot_densities(last,name,path, prices,risk_neutral, real_world_1, real_world_2):
+def plot_densities(last,name,path, prices,risk_neutral, real_world_1, real_world_2, logn_dens):
     fig,ax = plt.subplots(1, 1, figsize=(15, 10))
     plt.plot(prices,risk_neutral,lw=2.5, color='blue', label = "Risk Neutral Density $S_T$")
     plt.plot(prices,real_world_1,lw=2.5, color='red', label="Real World Density $S_T, \gamma=2 $")
     plt.plot(prices,real_world_2,lw=2.5, color='orange', label="Real World Density $S_T, \gamma=4$")
+    plt.plot(prices,logn_dens,lw=2.5, color='magenta', label="Log Normal Density")
+     
+    plt.axvline(x = last, color="green", linestyle='--', label = "$S_0 : {}$".format(last)) 
+    plt.xlabel('$S_T$')
+    plt.ylabel('Density')
+    ax.set_axisbelow(True)
+    ax.minorticks_on()
+    ax.grid(which='major', linestyle='-')
+    ax.grid(which='minor', linestyle=':')
+    plt.legend()
+    plt.grid(True)
+    file_name = name+".png"
+    plt.savefig(os.path.join(path, file_name))
+    plt.close(fig)
     
+def plot_densities_2(last,name,path, prices,logn_dens):
+    fig,ax = plt.subplots(1, 1, figsize=(15, 10))
+    plt.plot(prices,logn_dens,lw=2.5, color='magenta', label="Log Normal Density")
+     
     plt.axvline(x = last, color="green", linestyle='--', label = "$S_0 : {}$".format(last)) 
     plt.xlabel('$S_T$')
     plt.ylabel('Density')
