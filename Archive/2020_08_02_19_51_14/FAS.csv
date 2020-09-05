@@ -1,5 +1,0 @@
-Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Call_Strike_15,Call_Strike_15_alloc,Call_Strike_19,Call_Strike_19_alloc,Call_Strike_16,Call_Strike_16_alloc,Call_Strike_20,Call_Strike_20_alloc,Call_Strike_18,Call_Strike_18_alloc,Call_Strike_22,Call_Strike_22_alloc
-FAS,Bull Call Spread,11.88,122.0,78.0,122.0,65.14,34.96,0.09737704918032787,0.639344262295082,20.0,-1.0000000000000009,0.0,0.0,1.0,,,,,34.0,1.0,36.0,-1.0,,,,
-FAS,Bull Call Spread,4.78,141.0,59.0,141.0,69.73,30.37,0.03390070921985816,0.41843971631205673,19.000000000000007,-1.0000000000000009,0.0,-0.9999999999999999,0.0,33.5,1.0,35.5,-1.0,,,,,,,,
-FAS,Bull Call Spread,1.44,105.0,45.0,105.0,68.32,31.78,0.013714285714285714,0.42857142857142855,15.000000000000002,-1.0000000000000009,0.0,0.0,0.0,,,35.5,-1.0,34.0,1.0,,,,,,
-FAS,Bull Call Spread,1.08,96.0,104.0,96.0,50.81,49.29,0.011250000000000001,1.0833333333333333,19.0,1.0000000000000009,0.0,0.9999999999999999,1.0,,,,,,,,,35.0,1.0,37.0,-1.0

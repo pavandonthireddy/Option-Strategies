@@ -1,3 +1,0 @@
-Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Strike_1_type,Strike_1,Strike_1_alloc,Strike_2_type,Strike_2,Strike_2_alloc
-NAIL,Bull Call Spread,8.27,259.99999999999994,140.00000000000006,259.99999999999994,64.23,34.91,0.031807692307692315,0.5384615384615388,20.000000000000007,-1.0000000000000002,0.9999999999999996,0.0,0.0,Call,41.0,1.0,Call,45.0,-1.0
-NAIL,Bull Call Spread,5.42,190.00000000000006,109.99999999999994,190.00000000000006,63.09,36.06,0.028526315789473674,0.5789473684210522,15.000000000000002,0.0,0.0,0.0,0.0,Call,42.0,1.0,Call,45.0,-1.0

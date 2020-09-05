@@ -628,14 +628,14 @@ for i in range(len(All_Option_Chains)):
             put_1_pos = list(np.arange(chain.Put_total))
             put_2_pos = list(np.arange(chain.Put_total))
             put_3_pos = list(np.arange(chain.Put_total))
-            put_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-            put_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
+            put_1_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
+            put_2_quantity = 30#list(np.arange(1,max_quantity_per_leg+1))
             put_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
             
             iterables = [put_1_pos,put_2_pos,put_3_pos]
             for t in itertools.product(*iterables):
                 pos_1, pos_2, pos_3 = t
-                if pos_1 < pos_2 and pos_2 < pos_3 and (pos_2-pos_1)==2*(pos_3-pos_2):
+                if pos_1 < pos_2 and pos_2 < pos_3 and (pos_2-pos_1)==(pos_3-pos_2):
                     allocation = np.zeros((chain.Put_total,2))
                     allocation[pos_1,1] = put_1_quantity
                     allocation[pos_2,1] = -1*put_2_quantity
@@ -670,13 +670,13 @@ for i in range(len(All_Option_Chains)):
             call_2_pos = list(np.arange(chain.Call_total))
             call_3_pos = list(np.arange(chain.Call_total))
             call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-            call_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
-            call_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = 30#list(np.arange(1,max_quantity_per_leg+1))
+            call_3_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
             
             iterables = [call_1_pos,call_2_pos,call_3_pos]
             for t in itertools.product(*iterables):
                 pos_1, pos_2, pos_3 = t
-                if pos_1 < pos_2 and pos_2 < pos_3 and 2*(pos_2-pos_1)==(pos_3-pos_2):
+                if pos_1 < pos_2 and pos_2 < pos_3 and (pos_2-pos_1)==(pos_3-pos_2):
                     allocation = np.zeros((chain.Call_total,2))
                     allocation[pos_1,0] = call_1_quantity
                     allocation[pos_2,0] = -1*call_2_quantity
@@ -752,6 +752,8 @@ if save_results == True:
 # # print(cos)
 # # print("Expected PnL :", opt_strategy.expected_pnl() )
 # opt_strategy.plot_pnl()
+
+
 
 
 

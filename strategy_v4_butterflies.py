@@ -31,22 +31,22 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 #######################################################################################
 """
 
-data = pd.read_excel('penny_145_end.xlsx', index_col=None)  
-current_date = date(2020,8,28)
+data = pd.read_excel('etfs_sept_11.xlsx', index_col=None)  
+current_date = date(2020,9,4)
 expiry_date = date(2020,9,11)
 days_to_expiry = np.busday_count( current_date, expiry_date)-1
 
 
 
-min_p_profit = 40
-hor_leg_factor = 0.15
+min_p_profit = 50
+#hor_leg_factor = 0.05
 
 
 forecast_dens = False
 save_results = True
 save_plots = True
 
-Strategies = ["Bearish Call Modified Butterfly","Bullish Put Modified Butterfly"]
+Strategies = ["Bearish Call Butterfly","Bullish Put Butterfly"]
 
 
 """
@@ -356,6 +356,8 @@ for i in range(len(Assets)):
         res_pred['direction'] = res_pred['one_direction']
     else:
         res_pred['direction'] = res_pred['two_direction']
+        
+    res_pred['Description'] = opt_chain.Description
     
     predictions.append(res_pred)
     
@@ -366,14 +368,15 @@ for i in range(len(Assets)):
         else:
             du.plot_densities_2(opt_chain.Stock_Last,opt_chain.Name+'_dens',path, prices, logn_dens)
         pe.plot_actual_pred(act.iloc[-50:], pred, path, Assets[i]+'_pred')
-        
-density_results = pd.DataFrame(dens_results)
-densname = os.path.join(path, "02_density_results.csv")   
-density_results.to_csv(densname,index=False)
+ 
+if forecast_dens ==True:
+    density_results = pd.DataFrame(dens_results)
+    densname = os.path.join(path, "02_density_results.xlsx")   
+    density_results.to_excel(densname,index=False)
 
 prediction_results = pd.DataFrame(predictions)
-predname = os.path.join(path, "01_prediction_results.csv")   
-prediction_results.to_csv(predname,index=False)
+predname = os.path.join(path, "01_prediction_results.xlsx")   
+prediction_results.to_excel(predname,index=False)
         
 
         
@@ -539,9 +542,9 @@ class Strategy(object):
 #        strat_summary["Expected Utility"] = self.e_utility
         
         strat_summary["Cost of Strategy"] = self.initial_cost()
-        strat_summary["Total Debit"] = (-1*self.initial_cost())+self.Max_Loss
+        # strat_summary["Total Debit"] = (-1*self.initial_cost())+self.Max_Loss
         
-        strat_summary["Leg_profit"] = -1*self.initial_cost()
+        # strat_summary["Leg_profit"] = -1*self.initial_cost()
         strat_summary["Max_Profit"] = self.Max_Profit
         strat_summary["Max_Loss"] = self.Max_Loss
         
@@ -549,7 +552,7 @@ class Strategy(object):
         strat_summary["Prob of Loss"] = self.Prob_loss
         
         #strat_summary["Exp_Pnl/Max_Loss"]=self.e_pnl/self.Max_Loss
-        strat_summary["Leg_Profit_Factor"] = -1*self.initial_cost()/self.Max_Loss
+        # strat_summary["Leg_Profit_Factor"] = -1*self.initial_cost()/self.Max_Loss
         strat_summary["Profit_Factor"] = self.Max_Profit/self.Max_Loss #strat_summary["Max_Profit"]/strat_summary["Max_Loss"]
         
 
@@ -616,8 +619,8 @@ for i in range(len(All_Option_Chains)):
     Master_List_Strategy_Summary = pd.DataFrame()
     
     if predictions[i]['direction'] in ['Slight Bullish','Bullish']:
-        if "Bullish Put Modified Butterfly" in Strategies:
-            Strategy_name = "Bullish Put Modified Butterfly"
+        if "Bullish Put Butterfly" in Strategies:
+            Strategy_name = "Bullish Put Butterfly"
             print("\t Processing ", Strategy_name, " Strategy")
             bull_put_fly_strat = list()
             bull_put_fly = list()
@@ -625,8 +628,8 @@ for i in range(len(All_Option_Chains)):
             put_1_pos = list(np.arange(chain.Put_total))
             put_2_pos = list(np.arange(chain.Put_total))
             put_3_pos = list(np.arange(chain.Put_total))
-            put_1_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
-            put_2_quantity = 30#list(np.arange(1,max_quantity_per_leg+1))
+            put_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            put_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
             put_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
             
             iterables = [put_1_pos,put_2_pos,put_3_pos]
@@ -639,7 +642,7 @@ for i in range(len(All_Option_Chains)):
                     allocation[pos_3,1] = put_3_quantity
                     strat = Strategy(allocation,chain,Strategy_name)
                     details = strat.summary()
-                    if details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"]<0 and details["Leg_Profit_Factor"] > hor_leg_factor:
+                    if details["Prob of Profit"]>min_p_profit :
                         bull_put_fly_strat.append(strat)
                         bull_put_fly.append(details)
                 
@@ -657,8 +660,8 @@ for i in range(len(All_Option_Chains)):
     if predictions[i]['direction'] in ['Slight Bearish','Bearish']:
     
     
-        if "Bearish Call Modified Butterfly" in Strategies:
-            Strategy_name = "Bearish Call Modified Butterfly"
+        if "Bearish Call Butterfly" in Strategies:
+            Strategy_name = "Bearish Call Butterfly"
             print("\t Processing ", Strategy_name, " Strategy")
             bear_call_fly_strat = list()
             bear_call_fly = list()
@@ -667,8 +670,8 @@ for i in range(len(All_Option_Chains)):
             call_2_pos = list(np.arange(chain.Call_total))
             call_3_pos = list(np.arange(chain.Call_total))
             call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-            call_2_quantity = 30#list(np.arange(1,max_quantity_per_leg+1))
-            call_3_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
+            call_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
             
             iterables = [call_1_pos,call_2_pos,call_3_pos]
             for t in itertools.product(*iterables):
@@ -680,7 +683,7 @@ for i in range(len(All_Option_Chains)):
                     allocation[pos_3,0] = call_3_quantity
                     strat = Strategy(allocation,chain,Strategy_name)
                     details = strat.summary()
-                    if details["Prob of Profit"]>min_p_profit and details["Cost of Strategy"]<0 and details["Leg_Profit_Factor"] > hor_leg_factor:
+                    if details["Prob of Profit"]>min_p_profit :
                         bear_call_fly_strat.append(strat)
                         bear_call_fly.append(details)
                 
@@ -713,16 +716,16 @@ if save_results == True:
     
     merged = pd.concat(All_Strategies_Summary)
     if len(merged.index)>0:
-        outname = "00_All_Strategies.csv"
+        outname = "00_All_Strategies.xlsx"
         fullname = os.path.join(path, outname)   
-        merged.to_csv(fullname, index=False)
+        merged.to_excel(fullname, index=False)
     
     for i in range(len(Assets)):
         df = All_Strategies_Summary[i]
         if len(df.index)>0:
-            outname = Assets[i]+".csv"
+            outname = Assets[i]+".xlsx"
             fullname = os.path.join(path, outname)   
-            df.to_csv(fullname, index=False)
+            df.to_excel(fullname, index=False)
 
 
 
@@ -749,5 +752,8 @@ if save_results == True:
 # # print(cos)
 # # print("Expected PnL :", opt_strategy.expected_pnl() )
 # opt_strategy.plot_pnl()
+
+
+
 
 

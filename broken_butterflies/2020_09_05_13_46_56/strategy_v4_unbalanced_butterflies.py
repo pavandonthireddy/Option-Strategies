@@ -31,15 +31,15 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 #######################################################################################
 """
 
-data = pd.read_excel('etfs_sept_11.xlsx', index_col=None)  
-current_date = date(2020,9,4)
+data = pd.read_excel('penny_145_end.xlsx', index_col=None)  
+current_date = date(2020,8,28)
 expiry_date = date(2020,9,11)
 days_to_expiry = np.busday_count( current_date, expiry_date)-1
 
 
 
 min_p_profit = 35
-hor_leg_factor = 0.05
+hor_leg_factor = 0.15
 
 
 forecast_dens = False
@@ -356,8 +356,6 @@ for i in range(len(Assets)):
         res_pred['direction'] = res_pred['one_direction']
     else:
         res_pred['direction'] = res_pred['two_direction']
-        
-    res_pred['Description'] = opt_chain.Description
     
     predictions.append(res_pred)
     
@@ -368,15 +366,14 @@ for i in range(len(Assets)):
         else:
             du.plot_densities_2(opt_chain.Stock_Last,opt_chain.Name+'_dens',path, prices, logn_dens)
         pe.plot_actual_pred(act.iloc[-50:], pred, path, Assets[i]+'_pred')
- 
-if forecast_dens ==True:
-    density_results = pd.DataFrame(dens_results)
-    densname = os.path.join(path, "02_density_results.xlsx")   
-    density_results.to_excel(densname,index=False)
+        
+density_results = pd.DataFrame(dens_results)
+densname = os.path.join(path, "02_density_results.csv")   
+density_results.to_csv(densname,index=False)
 
 prediction_results = pd.DataFrame(predictions)
-predname = os.path.join(path, "01_prediction_results.xlsx")   
-prediction_results.to_excel(predname,index=False)
+predname = os.path.join(path, "01_prediction_results.csv")   
+prediction_results.to_csv(predname,index=False)
         
 
         
@@ -628,14 +625,14 @@ for i in range(len(All_Option_Chains)):
             put_1_pos = list(np.arange(chain.Put_total))
             put_2_pos = list(np.arange(chain.Put_total))
             put_3_pos = list(np.arange(chain.Put_total))
-            put_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-            put_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
+            put_1_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
+            put_2_quantity = 30#list(np.arange(1,max_quantity_per_leg+1))
             put_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
             
             iterables = [put_1_pos,put_2_pos,put_3_pos]
             for t in itertools.product(*iterables):
                 pos_1, pos_2, pos_3 = t
-                if pos_1 < pos_2 and pos_2 < pos_3 and (pos_2-pos_1)==2*(pos_3-pos_2):
+                if pos_1 < pos_2 and pos_2 < pos_3 and (pos_2-pos_1)==(pos_3-pos_2):
                     allocation = np.zeros((chain.Put_total,2))
                     allocation[pos_1,1] = put_1_quantity
                     allocation[pos_2,1] = -1*put_2_quantity
@@ -670,13 +667,13 @@ for i in range(len(All_Option_Chains)):
             call_2_pos = list(np.arange(chain.Call_total))
             call_3_pos = list(np.arange(chain.Call_total))
             call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-            call_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
-            call_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = 30#list(np.arange(1,max_quantity_per_leg+1))
+            call_3_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
             
             iterables = [call_1_pos,call_2_pos,call_3_pos]
             for t in itertools.product(*iterables):
                 pos_1, pos_2, pos_3 = t
-                if pos_1 < pos_2 and pos_2 < pos_3 and 2*(pos_2-pos_1)==(pos_3-pos_2):
+                if pos_1 < pos_2 and pos_2 < pos_3 and (pos_2-pos_1)==(pos_3-pos_2):
                     allocation = np.zeros((chain.Call_total,2))
                     allocation[pos_1,0] = call_1_quantity
                     allocation[pos_2,0] = -1*call_2_quantity
@@ -716,16 +713,16 @@ if save_results == True:
     
     merged = pd.concat(All_Strategies_Summary)
     if len(merged.index)>0:
-        outname = "00_All_Strategies.xlsx"
+        outname = "00_All_Strategies.csv"
         fullname = os.path.join(path, outname)   
-        merged.to_excel(fullname, index=False)
+        merged.to_csv(fullname, index=False)
     
     for i in range(len(Assets)):
         df = All_Strategies_Summary[i]
         if len(df.index)>0:
-            outname = Assets[i]+".xlsx"
+            outname = Assets[i]+".csv"
             fullname = os.path.join(path, outname)   
-            df.to_excel(fullname, index=False)
+            df.to_csv(fullname, index=False)
 
 
 
@@ -752,6 +749,5 @@ if save_results == True:
 # # print(cos)
 # # print("Expected PnL :", opt_strategy.expected_pnl() )
 # opt_strategy.plot_pnl()
-
 
 

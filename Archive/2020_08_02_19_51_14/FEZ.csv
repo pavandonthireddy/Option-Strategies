@@ -1,7 +1,0 @@
-Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Put_Strike_1,Put_Strike_1_alloc,Put_Strike_3,Put_Strike_3_alloc,Put_Strike_4,Put_Strike_4_alloc,Put_Strike_5,Put_Strike_5_alloc,Put_Strike_2,Put_Strike_2_alloc,Put_Strike_6,Put_Strike_6_alloc
-FEZ,Bear Put Spread,12.73,20.0,130.0,20.0,22.8,77.21,0.6365000000000001,6.5,-9.0,5.0,-0.9999999999999999,1.0,0.0,33.0,-1.0,,,34.5,1.0,,,,,,
-FEZ,Bear Put Spread,14.13,30.0,170.0,30.0,22.8,77.21,0.47100000000000003,5.666666666666667,-15.0,7.000000000000001,-0.9999999999999999,1.0,0.0,33.0,-1.0,,,,,35.0,1.0,,,,
-FEZ,Bear Put Spread,6.33,15.0,85.0,15.0,22.8,77.21,0.422,5.666666666666667,-4.999999999999999,3.0,0.0,1.0,0.0,33.0,-1.0,34.0,1.0,,,,,,,,
-FEZ,Bear Put Spread,5.63,40.0,160.0,40.0,22.82,77.18,0.14075,4.0,-19.0,9.0,-0.9999999999999999,1.0,0.0,,,,,,,,,33.5,-1.0,35.5,1.0
-FEZ,Bear Put Spread,4.19,30.0,120.0,30.0,22.8,77.21,0.1396666666666667,4.0,-13.0,6.0,-0.9999999999999999,1.0,0.0,,,,,,,35.0,1.0,33.5,-1.0,,
-FEZ,Bear Put Spread,2.79,20.0,80.0,20.0,22.8,77.21,0.1395,4.0,-7.000000000000001,3.9999999999999996,-0.9999999999999999,1.0,0.0,,,,,34.5,1.0,,,33.5,-1.0,,

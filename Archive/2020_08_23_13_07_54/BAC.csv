@@ -1,2 +1,0 @@
-Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Strike_1_type,Strike_1,Strike_1_alloc,Strike_2_type,Strike_2,Strike_2_alloc
-BAC,Bear Put Spread,-9.84,36.0,14.0,36.0,49.28,50.66,-0.2733333333333333,0.3888888888888889,-10.999999999999998,-2.0000000000000018,0.0,0.0,0.0,Put,25.0,-1.0,Put,25.5,1.0

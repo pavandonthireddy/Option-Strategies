@@ -1,4 +1,0 @@
-Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Strike_1_type,Strike_1,Strike_1_alloc,Strike_2_type,Strike_2,Strike_2_alloc
-DRI,Bull Call Spread,35.98,905.0,595.0,905.0,56.01,43.99,0.03975690607734806,0.6574585635359116,66.0,-2.0,2.0000000000000004,-2.0000000000000004,1.0,Call,70.0,1.0,Call,85.0,-1.0
-DRI,Bull Call Spread,37.0,475.0,525.0,475.0,52.22,47.78,0.07789473684210527,1.105263157894737,50.0,0.0,-0.9999999999999996,0.0,1.0,Call,75.0,1.0,Call,85.0,-1.0
-DRI,Bull Call Spread,15.84,175.0,325.0,175.0,41.56,58.43,0.09051428571428571,1.8571428571428572,23.999999999999996,1.9999999999999998,-2.0000000000000004,0.9999999999999996,0.0,Call,80.0,1.0,Call,85.0,-1.0

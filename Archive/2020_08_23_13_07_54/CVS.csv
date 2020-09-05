@@ -1,4 +1,0 @@
-Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Strike_1_type,Strike_1,Strike_1_alloc,Strike_2_type,Strike_2,Strike_2_alloc
-CVS,Bull Call Spread,-6.48,115.0,85.0,115.0,52.95,47.05,-0.05634782608695652,0.7391304347826086,26.0,0.0,0.0,0.0,0.0,Call,63.0,1.0,Call,65.0,-1.0
-CVS,Bull Call Spread,-8.23,85.0,65.0,85.0,50.4,49.6,-0.09682352941176471,0.7647058823529411,20.000000000000007,1.0000000000000009,0.0,0.0,0.0,Call,63.5,1.0,Call,65.0,-1.0
-CVS,Bull Call Spread,-4.99,52.999999999999986,47.000000000000014,52.999999999999986,47.81,52.19,-0.09415094339622644,0.8867924528301891,13.0,1.9999999999999991,0.0,0.0,0.0,Call,64.0,1.0,Call,65.0,-1.0

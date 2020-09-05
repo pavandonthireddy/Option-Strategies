@@ -1,4 +1,0 @@
-Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Strike_1_type,Strike_1,Strike_1_alloc,Strike_2_type,Strike_2,Strike_2_alloc
-KO,Bear Put Spread,-7.67,31.0,19.0,31.0,45.24,54.76,-0.24741935483870967,0.6129032258064516,-12.999999999999995,0.0,0.0,0.0,0.0,Put,47.0,-1.0,Put,47.5,1.0
-KO,Bear Put Spread,-8.58,90.99999999999999,109.00000000000001,90.99999999999999,42.87,57.13,-0.0942857142857143,1.1978021978021982,-46.0,6.999999999999998,0.0,0.0,-1.0,Put,46.0,-1.0,Put,48.0,1.0
-KO,Bear Put Spread,-7.12,48.0,52.0,48.0,40.53,59.47,-0.14833333333333334,1.0833333333333333,-24.999999999999993,4.000000000000001,0.0,1.0000000000000002,0.0,Put,46.5,-1.0,Put,47.5,1.0

@@ -1,2 +1,0 @@
-Underlying,Name,Expected PnL,Cost of Strategy,Max_Profit,Max_Loss,Prob of Profit,Prob of Loss,Exp_Pnl/Max_Loss,Profit_Factor,Strategy_Delta,Strategy_Gamma,Strategy_Theta,Strategy_Vega,Strategy_Rho,Strike_1_type,Strike_1,Strike_1_alloc,Strike_2_type,Strike_2,Strike_2_alloc
-INDL,Bull Call Spread,4.27,255.0,145.0,255.0,59.52,40.17,0.016745098039215686,0.5686274509803921,42.0,-2.0000000000000004,-1.0000000000000002,0.0,1.0,Call,27.0,1.0,Call,31.0,-1.0
