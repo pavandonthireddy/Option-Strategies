@@ -1,12 +1,10 @@
+symbol = "TLT"
 
-
-symbol = "NVDA"
-
-function(symbol){
+predfunc<-function(symbol){
   library(glmnet)
   #install.packages("forecastML")
   library(forecastML)
-  #library(lubridate)
+  library(lubridate)
   library(quantmod)
   library(ggplot2)
   library(sys)
@@ -19,7 +17,7 @@ function(symbol){
   
   data_stock = data.frame(coredata(data))
   data_train <- forecastML::create_lagged_df(data_stock, type = "train", method = "direct",
-                                             outcome_col = 1, lookback = 1:90, horizons = 1:6)
+                                             outcome_col = 1, lookback = 1:100, horizons = 1:6)
   
   windows <- forecastML::create_windows(data_train, window_length = 0)
   
@@ -28,7 +26,7 @@ function(symbol){
     y <- as.matrix(data[, 1, drop = FALSE])
     model_c <- glmnet::cv.glmnet(x, y, nfolds=10, parallel = TRUE)
     penalty <- model_c$lambda.min
-    fit1 <- glmnet::glmnet(x = X, y = y, family = "binomial", alpha = 1, lambda = penalty)
+    model <- glmnet::glmnet(x,y, alpha=1, lambda = penalty)
   }
   
   model_results <- forecastML::train_model(data_train, windows, model_name = "LASSO", model_function = model_fn)
@@ -42,7 +40,7 @@ function(symbol){
   residuals <- residuals(data_fit)
   
   data_forecast <- forecastML::create_lagged_df(data_stock, type = "forecast", method = "direct",
-                                                outcome_col = 1, lookback = 1:90, horizons = 1:6)
+                                                outcome_col = 1, lookback = 1:100, horizons = 1:6)
   
   data_forecasts <- predict(model_results, prediction_function = list(predict_fn), data = data_forecast)
   
@@ -76,5 +74,4 @@ function(symbol){
   final_dataset
 }
 
-res = predfunc(symbol)
-
+ANS = predfunc(symbol)
