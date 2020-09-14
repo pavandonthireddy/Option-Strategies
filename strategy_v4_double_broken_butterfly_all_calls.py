@@ -31,7 +31,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 #######################################################################################
 """
 
-data = pd.read_excel('etfs_sept_18.xlsx', index_col=None)  
+data = pd.read_excel('tlt_sept.xlsx', index_col=None)  
 current_date = date(2020,9,11)
 expiry_date = date(2020,9,18)
 days_to_expiry = np.busday_count( current_date, expiry_date)-1
