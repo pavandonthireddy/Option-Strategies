@@ -22,6 +22,7 @@ import yfinance as yf
 from american_option_pricing import american_option
 import density_utilities as du
 import prediction_ensemble_py as pe
+import multi_step_final_v1 as ms
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -31,9 +32,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 #######################################################################################
 """
 
-data = pd.read_excel('spy.xlsx', index_col=None)  
-current_date = date(2020,9,29)
-expiry_date = date(2020,10,2)
+data = pd.read_excel('spx_oct_7.xlsx', index_col=None)  
+current_date = date(2020,10,3)
+expiry_date = date(2020,10,7)
 days_to_expiry = np.busday_count( current_date, expiry_date)-1
 
 
@@ -127,6 +128,7 @@ stock_data.rename(columns={"Description": "stock_Description",
 stock_data = stock_data[["stock_Description","stock_Last","stock_High","stock_Low",
                          "stock_Open","stock_Volume","stock_Bid","stock_Ask",
                          "stock_Impl_Vol","stock_Spread","Chain_ID"]]
+stock_data['Chain_ID'] = 'SPXW_2020_10_07'
     
 option_data = data[data['Type']=="Option"]
 option_data['Option_type'] = option_data.loc[:,'Description'].str.split(' ').str[-1]
@@ -340,43 +342,44 @@ for i in range(len(Assets)):
         
         
     print("\t Forecasting Close price using time series ensembles ")
-    act, pred, forecasts, res_pred = pe.calculate_predictions(Assets[i])
-    opt_chain.actual_data = act
-    opt_chain.predict_data = pred
-    opt_chain.forecast_data = forecasts
-    opt_chain.forecast_res = res_pred
-    print("\t \t Predicted 1 week Direction     :", res_pred['one_direction'])
-    print("\t \t Predicted 1 week return :", round(res_pred['one_Pred_ret']*100,2)," %")
+    res_pred, result_forecast = ms.multi_step_pred(Assets[i],current_date.strftime("%Y-%m-%d"),path, Assets[i]+'_pred',save_plots)
+    opt_chain.forecast_data = res_pred
+    opt_chain.ret_forecast = result_forecast
     
+    rows = len(result_forecast)
+    for k  in range(rows):
+        a = round(result_forecast.loc[k,'log_ret']*100,2)
+        print("\t Predicted Return for ", k+1, " day :", a," %")
     
-    print("\t \t Predicted 2 week Direction     :", res_pred['two_direction'])
-    print("\t \t Predicted 2 week return :", round(res_pred['two_Pred_ret']*100,2)," %")
+    for k  in range(rows):
+        a = round(result_forecast.loc[k,'cum_ret']*100,2)
+        b = round(result_forecast.loc[k,'yhat_lower'],2)
+        c = round(result_forecast.loc[k,'yhat_upper'],2)
+        print("\t Predicted Cum Return for ", k+1, " day :", a, "%. Bounds are(",b, ", ", c , ')')
     
-    if days_to_expiry == 4:
-        res_pred['direction'] = res_pred['one_direction']
-    else:
-        res_pred['direction'] = res_pred['two_direction']
+
         
     res_pred['Description'] = opt_chain.Description
     
     predictions.append(res_pred)
     
+
+    predname = os.path.join(path, Assets[i]+"_pred_results.xlsx")   
+    res_pred.to_excel(predname,index=False)
     
     if save_plots == True:
         if forecast_dens:
             du.plot_densities(opt_chain.Stock_Last,opt_chain.Name+'_dens',path, prices,risk_neutral, real_world_1, real_world_2, logn_dens)
         else:
             du.plot_densities_2(opt_chain.Stock_Last,opt_chain.Name+'_dens',path, prices, logn_dens)
-        pe.plot_actual_pred(act.iloc[-50:], pred, path, Assets[i]+'_pred')
+        # pe.plot_actual_pred(act.iloc[-50:], pred, path, Assets[i]+'_pred')
  
 if forecast_dens ==True:
     density_results = pd.DataFrame(dens_results)
     densname = os.path.join(path, "02_density_results.xlsx")   
     density_results.to_excel(densname,index=False)
 
-prediction_results = pd.DataFrame(predictions)
-predname = os.path.join(path, "01_prediction_results.xlsx")   
-prediction_results.to_excel(predname,index=False)
+
         
 
         
@@ -904,25 +907,20 @@ print("\n Time Elapsed :", toc-tic)
 
 
 if save_results == True:
-    
-    # merged = pd.concat(All_Strategies_Summary)
-    # if len(merged.index)>0:
-    #     outname = "00_All_Strategies.xlsx"
-    #     fullname = os.path.join(path, outname)   
-    #     merged.to_excel(fullname, index=False)
-    
     for i in range(len(Assets)):
         # df_main = All_Strategies_Summary[i]
         df_bull = Bull_Fly_Summary[i]
         df_bear = Bear_Fly_Summary[i]
         df_fly = Fly_Summary[i]
         df_iron_con = Iron_Con_Summary[i]
+        res_pred = predictions[i]
         # if len(df_main.index)>=0:
         min_strat = min(len(df_bull),len(df_bear))
-        if min_strat > 20:
+        if min_strat > 5:
             outname = Assets[i]+".xlsx"
             fullname = os.path.join(path, outname)   
             with pd.ExcelWriter(fullname) as writer:
+                res_pred.to_excel(writer,sheet_name='Forecast', index=False)
                 df_iron_con.to_excel(writer,sheet_name= 'Iron Condor', index=False)
                 df_fly.to_excel(writer,sheet_name= 'Butterfly ', index=False)
                 df_bull.to_excel(writer,sheet_name='Bull Broken', index=False)
@@ -956,6 +954,7 @@ if save_results == True:
 # opt_strategy.plot_pnl()
 
 #f= 1<2 and 3<4
+
 
 
 

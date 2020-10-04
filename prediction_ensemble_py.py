@@ -15,7 +15,7 @@ import os
 import numpy as np
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-symbol = "QQQ"
+
 
 def calculate_predictions(symbol):
     rfunc=robjects.r(rstring)
@@ -107,5 +107,5 @@ def plot_actual_pred(actual, predicted, path, name):
     plt.savefig(os.path.join(path, file_name))
     plt.close(fig)
 
-plot_actual, plot_predicted, forecast_df, res =  calculate_predictions(symbol)
+#plot_actual, plot_predicted, forecast_df, res =  calculate_predictions(symbol)
 #plot_actual_pred(plot_actual.iloc[-50:], plot_predicted, symbol)
