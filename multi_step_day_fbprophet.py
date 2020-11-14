@@ -9,23 +9,30 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 import matplotlib.pyplot as plt
-import random 
+from tsmoothie.smoother import *
 
-last_available_date = "2020-10-03"
 
-symbol = "^GSPC"
+last_available_date = "2020-11-09"
+
+symbol = "SPY"
 # symbol = "TLT"
 eod_data = yf.download(symbol, start="2018-06-01", end= last_available_date)
+smoother = KalmanSmoother(component='level_trend', 
+                          component_noise={'level':0.2, 'trend':0.2})
 
 for col in eod_data.columns:
     eod_data[col] = pd.to_numeric(eod_data[col],errors='coerce')
 
 eod_data["Date"] = pd.to_datetime(eod_data.index, format="%Y-%m-%d")
 
-
+# eod_data['Close_2'] = eod_data['Close']
 # Select only the important features i.e. the date and price
 data = eod_data[["Date","Close"]] # select Date and Price
+# data["Close"] = data["Close"]/10
 # Rename the features: These names are NEEDED for the model fitting
+
+
+data['Close'] = np.squeeze(smoother.smooth(data['Close']).smooth_data)
 data = data.rename(columns = {"Date":"ds","Close":"y"}) #renaming the columns of the dataset
 
 cycle=361
@@ -40,7 +47,7 @@ m = Prophet(
     daily_seasonality=False,
     weekly_seasonality=False,
     yearly_seasonality=False,
-    interval_width=0.99
+    interval_width=0.98
     ).add_seasonality(
         name='monthly',
         period= cycle/12,
@@ -68,6 +75,7 @@ m.fit(data) # fit the model using all dat
 
 future = m.make_future_dataframe(periods=5) #we need to specify the number of days in future
 prediction = m.predict(future)
+
 final_res = prediction[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(20)
 final_res = final_res.rename(columns = {"ds":"Date"}) #renaming the columns of the dataset
 result = pd.merge(final_res, data, how='left', on=['Date'])
@@ -90,12 +98,14 @@ for i  in range(rows):
     print("Predicted Cum Return for ", i+1, " day :", a, "%. Bounds are(",b, ", ", c , ')')
 
 
+# m.history['y'] = eod_data['Close']
+
 
 m.plot(prediction)
-plt.title("Prediction of the SPX using the Prophet")
+plt.title("Prediction of  "+symbol+" using the Prophet")
 plt.xlabel("Date")
 plt.ylabel("Close Price")
 plt.show()
 
 # Python
-m.plot_components(prediction)
+#m.plot_components(prediction)

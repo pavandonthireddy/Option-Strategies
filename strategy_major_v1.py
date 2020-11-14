@@ -32,10 +32,10 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 #######################################################################################
 """
 
-data = pd.read_excel('spx_oct_7.xlsx', index_col=None)  
-current_date = date(2020,10,3)
-expiry_date = date(2020,10,7)
-days_to_expiry = np.busday_count( current_date, expiry_date)-1
+data = pd.read_excel('etfs_nov_20.xlsx', index_col=None)  
+current_date = date(2020,11,14)
+expiry_date = date(2020,11,20)
+days_to_expiry = np.busday_count( current_date, expiry_date)+1
 
 
 
@@ -46,10 +46,12 @@ days_to_expiry = np.busday_count( current_date, expiry_date)-1
 forecast_dens = False
 save_results = True
 save_plots = True
+calculate_strategies = False
 
-Strategies = []
-Strategies = ["Butterfly","Double Broken Wing Butterfly","Iron Condor"]
-# Strategies = ["Iron Condor"]
+
+#Strategies = ["Butterfly","Bear Double Broken Wing Butterfly","Bull Double Broken Wing Butterfly", "Iron Condor"]
+Strategies = ["Bear Double Broken Wing Butterfly","Bull Double Broken Wing Butterfly", "Iron Condor"]
+
 """
 #######################################################################################
                                     Get Risk Free Date                   
@@ -128,7 +130,7 @@ stock_data.rename(columns={"Description": "stock_Description",
 stock_data = stock_data[["stock_Description","stock_Last","stock_High","stock_Low",
                          "stock_Open","stock_Volume","stock_Bid","stock_Ask",
                          "stock_Impl_Vol","stock_Spread","Chain_ID"]]
-stock_data['Chain_ID'] = 'SPXW_2020_10_07'
+# stock_data['Chain_ID'] = 'SPXW_2020_10_07'
     
 option_data = data[data['Type']=="Option"]
 option_data['Option_type'] = option_data.loc[:,'Description'].str.split(' ').str[-1]
@@ -239,6 +241,7 @@ class Option_chain(object):
         setattr(self,"Put_total", len(self.Put_Strike))
       
         setattr(self,"Stock_Last", asset_df["stock_Last"].iloc[0])
+        setattr(self,"Stock_Volume", asset_df["stock_Volume"].iloc[0])
         
         setattr(self,"Description", asset_df["stock_Description"].iloc[0])
         
@@ -317,8 +320,10 @@ Assets = list(final_dataset['Group'].unique())
 All_Option_Chains = list()
 
 predictions = list()
-
+predictions_vol = list()
 dens_results = list() 
+forecast_results_l = list()
+
 for i in range(len(Assets)): 
     print("\n Pre-Processing ",i+1,"/",len(Assets), "-", Assets[i])
 
@@ -346,6 +351,18 @@ for i in range(len(Assets)):
     opt_chain.forecast_data = res_pred
     opt_chain.ret_forecast = result_forecast
     
+    print("\t Forecasting Volatility ATR(14) using time series ensembles ")    
+    res_pred_vol, result_forecast_vol = ms.multi_step_pred_vol(Assets[i],current_date.strftime("%Y-%m-%d"),path, Assets[i]+'_pred',save_plots)
+    opt_chain.forecast_data_vol = res_pred_vol
+    opt_chain.ret_forecast_vol = result_forecast_vol
+    
+    f_results = dict()
+
+    f_results['Description'] = opt_chain.Description
+    f_results['Asset'] = Assets[i]
+    f_results['Last'] = opt_chain.Stock_Last
+    f_results['Volume'] = opt_chain.Stock_Volume
+    
     rows = len(result_forecast)
     for k  in range(rows):
         a = round(result_forecast.loc[k,'log_ret']*100,2)
@@ -355,17 +372,34 @@ for i in range(len(Assets)):
         a = round(result_forecast.loc[k,'cum_ret']*100,2)
         b = round(result_forecast.loc[k,'yhat_lower'],2)
         c = round(result_forecast.loc[k,'yhat_upper'],2)
-        print("\t Predicted Cum Return for ", k+1, " day :", a, "%. Bounds are(",b, ", ", c , ')')
-    
-
+        print("\t Predicted Cum Return for ", k+1, " day :", a, "%.  95 % Bounds are(",b, ", ", c , ')')
+        if k==rows-1:
+            f_results['5d Cum Return'] = a
+            f_results['predicted price'] = (1+(a/100))*opt_chain.Stock_Last
         
+        
+    rows = len(result_forecast_vol)
+    for k  in range(rows):
+        a = round(result_forecast_vol.loc[k,'log_ret']*100,2)
+        print("\t Predicted vol change for ", k+1, " day :", a," %")
+    
+    for k  in range(rows):
+        a = round(result_forecast_vol.loc[k,'cum_ret']*100,2)
+        b = round(result_forecast_vol.loc[k,'yhat_lower'],2)
+        c = round(result_forecast_vol.loc[k,'yhat_upper'],2)
+        print("\t Predicted vol for ", k+1, " day :", a, "%.  95 % Bounds are(",b, ", ", c , ')')
+        if k==rows-1:
+            f_results['5d ATR(14) change'] = a    
+    
+    f_results['Implied Volatility'] = 100*opt_chain.Stock_Volt
+    
+    forecast_results_l.append(f_results)
+    
     res_pred['Description'] = opt_chain.Description
-    
     predictions.append(res_pred)
-    
+    predictions_vol.append(res_pred_vol)
 
-    predname = os.path.join(path, Assets[i]+"_pred_results.xlsx")   
-    res_pred.to_excel(predname,index=False)
+
     
     if save_plots == True:
         if forecast_dens:
@@ -373,7 +407,11 @@ for i in range(len(Assets)):
         else:
             du.plot_densities_2(opt_chain.Stock_Last,opt_chain.Name+'_dens',path, prices, logn_dens)
         # pe.plot_actual_pred(act.iloc[-50:], pred, path, Assets[i]+'_pred')
- 
+
+forecast_results_df = pd.DataFrame(forecast_results_l)
+predname = os.path.join(path, "00_Forecast_results.xlsx")   
+forecast_results_df.to_excel(predname,index=False)
+
 if forecast_dens ==True:
     density_results = pd.DataFrame(dens_results)
     densname = os.path.join(path, "02_density_results.xlsx")   
@@ -613,347 +651,379 @@ def combine_strat(call_strat, put_strat,chain):
 #######################################################################################
 """ 
 
-        
-        
-        
 
-
-tic = datetime.now()
-
-
-#All_Strategies = list()
-All_Strategies_Summary = list()
-
-Bear_Fly_Summary = list()
-Bull_Fly_Summary = list()
-Fly_Summary = list()
-Iron_Con_Summary = list()
-
-tic = datetime.now()
-
-
-for i in range(len(All_Option_Chains)):
-    chain = All_Option_Chains[i]
-    print("\n Processing ",i+1,"/",len(All_Option_Chains), "-", chain.Name, " : ", chain.Description)
-
-    Master_List_Strategies = list()
-    Master_List_Strategy_Summary = pd.DataFrame()
-    #if predictions[i]['direction'] in ['Slight Bearish','Bearish']:
-    # if predictions[i]['direction'] in ['Slight Bullish','Bullish']:
+if calculate_strategies == True:
+    tic = datetime.now()
+    #All_Strategies = list()
+    All_Strategies_Summary = list()
     
-    bull_pos = np.empty((0,3))
-    bull_call_fly_df = pd.DataFrame()
-    if "Double Broken Wing Butterfly" in Strategies:
-        Strategy_name = "Bullish Call Modified Butterfly"
-        print("\t Processing ", Strategy_name, " Strategy")
-        bull_call_fly_strat = list()
-        bull_call_fly = list()
-
-        call_1_pos = list(np.arange(chain.Call_total))
-        call_2_pos = list(np.arange(chain.Call_total))
-        call_3_pos = list(np.arange(chain.Call_total))
-        call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-        call_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
-        call_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-        
-        iterables = [call_1_pos,call_2_pos,call_3_pos]
-        
-        bull_pos = np.zeros((0,3))
-        bull_strike = np.zeros((0,3))
-        for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3 = t
-            pos_cons = (chain.Call_Strike[pos_2]-chain.Call_Strike[pos_1])>=2*(chain.Call_Strike[pos_3]-chain.Call_Strike[pos_2]) and (chain.Call_Strike[pos_2]-chain.Call_Strike[pos_1])<=9*(chain.Call_Strike[pos_3]-chain.Call_Strike[pos_2])
-            if pos_1 < pos_2 and pos_2 < pos_3 and pos_cons:
-                allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,0] = call_1_quantity
-                allocation[pos_2,0] = -1*call_2_quantity
-                allocation[pos_3,0] = call_3_quantity
-                strat = Strategy(allocation,chain,Strategy_name)
-                details = strat.summary()
-                if details["Strategy_right_leg"]>0 :
-                    bull_call_fly_strat.append(strat)
-                    bull_call_fly.append(details)
-                    
-                    bull_pos = np.vstack((bull_pos,np.array([[pos_1,pos_2,pos_3]])))
-                    bull_strike = np.vstack((bull_strike, np.array([[chain.Call_Strike[pos_1], chain.Call_Strike[pos_2], chain.Call_Strike[pos_3]]])))
+    Bear_Fly_Summary = list()
+    Bull_Fly_Summary = list()
+    Fly_Summary = list()
+    Iron_Con_Summary = list()
+    
+    tic = datetime.now()
+    
+    
+    for i in range(len(All_Option_Chains)):
+        chain = All_Option_Chains[i]
+        print("\n Processing ",i+1,"/",len(All_Option_Chains), "-", chain.Name, " : ", chain.Description)
+    
+        Master_List_Strategies = list()
+        Master_List_Strategy_Summary = pd.DataFrame()
+        #if predictions[i]['direction'] in ['Slight Bearish','Bearish']:
+        # if predictions[i]['direction'] in ['Slight Bullish','Bullish']:
+    
+        """
+        #######################################################################################
+                                            Bull Call Broken Butterfly                 
+        #######################################################################################
+        """ 
+    
+        bull_pos = np.empty((0,3))
+        bull_call_fly_df = pd.DataFrame()
+        if "Bull Double Broken Wing Butterfly" in Strategies:
+            Strategy_name = "Bullish Call Modified Butterfly"
+            print("\t Processing ", Strategy_name, " Strategy")
+            bull_call_fly_strat = list()
+            bull_call_fly = list()
+    
+            call_1_pos = list(np.arange(chain.Call_total))
+            call_2_pos = list(np.arange(chain.Call_total))
+            call_3_pos = list(np.arange(chain.Call_total))
+            call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
+            call_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
             
-                    
-        if len(bull_call_fly)>0:
-            bull_call_fly_df = pd.DataFrame(bull_call_fly)
-            bull_call_fly_df = bull_call_fly_df.sort_values(by=["Prob of Profit"], ascending=False)
-
-            # Master_List_Strategies.append(bull_put_fly_strat)  
-            print("\t \t Added ", len(bull_call_fly), " Strategies")
-
+            iterables = [call_1_pos,call_2_pos,call_3_pos]
+            
+            bull_pos = np.zeros((0,3))
+            bull_strike = np.zeros((0,3))
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, pos_3 = t
+                pos_cons = (chain.Call_Strike[pos_2]-chain.Call_Strike[pos_1])>=2*(chain.Call_Strike[pos_3]-chain.Call_Strike[pos_2]) and (chain.Call_Strike[pos_2]-chain.Call_Strike[pos_1])<=9*(chain.Call_Strike[pos_3]-chain.Call_Strike[pos_2])
+                if pos_1 < pos_2 and pos_2 < pos_3 and pos_cons:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,0] = call_1_quantity
+                    allocation[pos_2,0] = -1*call_2_quantity
+                    allocation[pos_3,0] = call_3_quantity
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Strategy_right_leg"]>0 :
+                        bull_call_fly_strat.append(strat)
+                        bull_call_fly.append(details)
+                        
+                        bull_pos = np.vstack((bull_pos,np.array([[pos_1,pos_2,pos_3]])))
+                        bull_strike = np.vstack((bull_strike, np.array([[chain.Call_Strike[pos_1], chain.Call_Strike[pos_2], chain.Call_Strike[pos_3]]])))
+                
+                        
+            if len(bull_call_fly)>0:
+                bull_call_fly_df = pd.DataFrame(bull_call_fly)
+                bull_call_fly_df = bull_call_fly_df.sort_values(by=["Prob of Profit"], ascending=False)
     
-
- 
-    # if predictions[i]['direction'] in ['Slight Bearish','Bearish']:
-    #if predictions[i]['direction'] in ['Slight Bullish','Bullish']:    
-    bear_call_fly_df = pd.DataFrame()
-    if "Double Broken Wing Butterfly" in Strategies:
-        Strategy_name = "Bearish Call Modified Butterfly"
-        print("\t Processing ", Strategy_name, " Strategy")
-        bear_call_fly_strat = list()
-        bear_call_fly = list()
-
-        call_1_pos = list(np.arange(chain.Call_total))
-        call_2_pos = list(np.arange(chain.Call_total))
-        call_3_pos = list(np.arange(chain.Call_total))
-        call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-        call_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
-        call_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+                # Master_List_Strategies.append(bull_put_fly_strat)  
+                print("\t \t Added ", len(bull_call_fly), " Strategies")
+    
+        
+        """
+        #######################################################################################
+                                            Bear Call Broken Butterfly                 
+        #######################################################################################
+        """ 
+    
+     
+        # if predictions[i]['direction'] in ['Slight Bearish','Bearish']:
+        #if predictions[i]['direction'] in ['Slight Bullish','Bullish']:    
+        bear_call_fly_df = pd.DataFrame()
+        if "Bear Double Broken Wing Butterfly" in Strategies:
+            Strategy_name = "Bearish Call Modified Butterfly"
+            print("\t Processing ", Strategy_name, " Strategy")
+            bear_call_fly_strat = list()
+            bear_call_fly = list()
+    
+            call_1_pos = list(np.arange(chain.Call_total))
+            call_2_pos = list(np.arange(chain.Call_total))
+            call_3_pos = list(np.arange(chain.Call_total))
+            call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
+            call_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            
+            
+            
+            
+            bear_pos = np.zeros((0,3))
+            bear_strike = np.zeros((0,3))
+            
+            iterables = [call_1_pos,call_2_pos,call_3_pos]
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, pos_3 = t
+                pos_cons = (chain.Call_Strike[pos_3]-chain.Call_Strike[pos_2]) >= 2*(chain.Call_Strike[pos_2]-chain.Call_Strike[pos_1]) and (chain.Call_Strike[pos_3]-chain.Call_Strike[pos_2]) <= 9*(chain.Call_Strike[pos_2]-chain.Call_Strike[pos_1])
+                if pos_1 < pos_2 and pos_2 < pos_3 and pos_cons:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,0] = call_1_quantity
+                    allocation[pos_2,0] = -1*call_2_quantity
+                    allocation[pos_3,0] = call_3_quantity
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    if details["Strategy_left_leg"]>0 :
+                        bear_call_fly_strat.append(strat)
+                        bear_call_fly.append(details)
+                                            
+                        bear_pos = np.vstack((bear_pos,np.array([[pos_1,pos_2,pos_3]])))
+                        bear_strike = np.vstack((bear_strike, np.array([[chain.Call_Strike[pos_1], chain.Call_Strike[pos_2], chain.Call_Strike[pos_3]]])))
+                
+            
+                
+            if len(bear_call_fly)>0:
+                bear_call_fly_df = pd.DataFrame(bear_call_fly)
+                bear_call_fly_df = bear_call_fly_df.sort_values(by=["Prob of Profit"], ascending=False)
+    
+                # Master_List_Strategies.append(bear_call_fly_strat)  
+                print("\t \t Added ", len(bear_call_fly), " Strategies")
         
         
+        """
+        #######################################################################################
+                                            Double Broken Butterfly                 
+        #######################################################################################
+        """ 
         
         
-        bear_pos = np.zeros((0,3))
-        bear_strike = np.zeros((0,3))
+        double_fly_df =  pd.DataFrame()     
+        if "General Double Broken Wing Butterfly" in Strategies:
+            Strategy_name = "Double Broken Wing Butterfly"
+            print("\t Processing ", Strategy_name, " Strategy")
+            double_fly_details = list()
+            double_fly_strats = list()
+            
+            for i in range(len(bear_call_fly_strat)):
+                for j in range(len(bull_call_fly_strat)):
+                    call_strat = bear_call_fly_strat[i]
+                    put_strat = bull_call_fly_strat[j]
+                    
+                    bear_strikes = bear_strike[i,:]
+                    bull_strikes = bull_strike[j,:]
+                    
+                    not_equal = bear_strikes[0] != bull_strikes[0] and bear_strikes[1] != bull_strikes[1] and bear_strikes[2] != bull_strikes[2]
+                    
+                    reflection = bear_strikes[2]+bull_strikes[0] <= 2*math.ceil(chain.Stock_Last) and bear_strikes[2]+bull_strikes[0] >= 2*math.floor(chain.Stock_Last)
+                    
+                    if not_equal and reflection :
+                    
+                        double_strat = combine_strat(call_strat, put_strat,chain)
+                        details = double_strat.summary()  
+                        if details["Total_Strikes"] == 7:
+                            double_fly_details.append(details)
+                            double_fly_strats.append(double_strat)
+                
+            if len(double_fly_details)>0:
+                double_fly_df = pd.DataFrame(double_fly_details)
+                double_fly_df = double_fly_df.sort_values(by=["Prob of Profit"], ascending=False)
+                print("\t \t Added ", len(double_fly_details), " Strategies")
+                
         
-        iterables = [call_1_pos,call_2_pos,call_3_pos]
-        for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3 = t
-            pos_cons = (chain.Call_Strike[pos_3]-chain.Call_Strike[pos_2]) >= 2*(chain.Call_Strike[pos_2]-chain.Call_Strike[pos_1]) and (chain.Call_Strike[pos_3]-chain.Call_Strike[pos_2]) <= 9*(chain.Call_Strike[pos_2]-chain.Call_Strike[pos_1])
-            if pos_1 < pos_2 and pos_2 < pos_3 and pos_cons:
-                allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,0] = call_1_quantity
-                allocation[pos_2,0] = -1*call_2_quantity
-                allocation[pos_3,0] = call_3_quantity
-                strat = Strategy(allocation,chain,Strategy_name)
-                details = strat.summary()
-                if details["Strategy_left_leg"]>0 :
-                    bear_call_fly_strat.append(strat)
-                    bear_call_fly.append(details)
+        """
+        #######################################################################################
+                                            Butterfly                 
+        #######################################################################################
+        """ 
+    
+        call_fly_df = pd.DataFrame()
+        if "Butterfly" in Strategies:
+            Strategy_name = "Butterfly"
+            print("\t Processing ", Strategy_name, " Strategy")
+            call_fly_strat = list()
+            call_fly = list()
+    
+            call_1_pos = list(np.arange(chain.Call_total))
+            call_2_pos = list(np.arange(chain.Call_total))
+            call_3_pos = list(np.arange(chain.Call_total))
+            call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
+            call_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            
+            
+            
+            
+            bear_pos = np.zeros((0,3))
+            bear_strike = np.zeros((0,3))
+            
+            iterables = [call_1_pos,call_2_pos,call_3_pos]
+            for t in itertools.product(*iterables):
+                pos_1, pos_2, pos_3 = t
+                pos_cons = (chain.Call_Strike[pos_3]-chain.Call_Strike[pos_2]) == (chain.Call_Strike[pos_2]-chain.Call_Strike[pos_1]) 
+                if pos_1 < pos_2 and pos_2 < pos_3 and pos_cons:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[pos_1,0] = call_1_quantity
+                    allocation[pos_2,0] = -1*call_2_quantity
+                    allocation[pos_3,0] = call_3_quantity
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    # if details["Strategy_left_leg"]>0 :
+                    call_fly_strat.append(strat)
+                    call_fly.append(details)
                                         
                     bear_pos = np.vstack((bear_pos,np.array([[pos_1,pos_2,pos_3]])))
                     bear_strike = np.vstack((bear_strike, np.array([[chain.Call_Strike[pos_1], chain.Call_Strike[pos_2], chain.Call_Strike[pos_3]]])))
             
-        
             
-        if len(bear_call_fly)>0:
-            bear_call_fly_df = pd.DataFrame(bear_call_fly)
-            bear_call_fly_df = bear_call_fly_df.sort_values(by=["Prob of Profit"], ascending=False)
-
-            # Master_List_Strategies.append(bear_call_fly_strat)  
-            print("\t \t Added ", len(bear_call_fly), " Strategies")
+                
+            if len(call_fly)>0:
+                call_fly_df = pd.DataFrame(call_fly)
+                call_fly_df = call_fly_df.sort_values(by=["Prob of Profit"], ascending=False)
     
-    double_fly_df =  pd.DataFrame()     
-    if "General Double Broken Wing Butterfly" in Strategies:
-        Strategy_name = "Double Broken Wing Butterfly"
-        print("\t Processing ", Strategy_name, " Strategy")
-        double_fly_details = list()
-        double_fly_strats = list()
+                # Master_List_Strategies.append(bear_call_fly_strat)  
+                print("\t \t Added ", len(call_fly), " Strategies")
         
-        for i in range(len(bear_call_fly_strat)):
-            for j in range(len(bull_call_fly_strat)):
-                call_strat = bear_call_fly_strat[i]
-                put_strat = bull_call_fly_strat[j]
-                
-                bear_strikes = bear_strike[i,:]
-                bull_strikes = bull_strike[j,:]
-                
-                not_equal = bear_strikes[0] != bull_strikes[0] and bear_strikes[1] != bull_strikes[1] and bear_strikes[2] != bull_strikes[2]
-                
-                reflection = bear_strikes[2]+bull_strikes[0] <= 2*math.ceil(chain.Stock_Last) and bear_strikes[2]+bull_strikes[0] >= 2*math.floor(chain.Stock_Last)
-                
-                if not_equal and reflection :
-                
-                    double_strat = combine_strat(call_strat, put_strat,chain)
-                    details = double_strat.summary()  
-                    if details["Total_Strikes"] == 7:
-                        double_fly_details.append(details)
-                        double_fly_strats.append(double_strat)
+        
+        """
+        #######################################################################################
+                                            Iron Condor                 
+        #######################################################################################
+        """ 
+        
+        iron_con_df = pd.DataFrame()
+        if "Iron Condor" in Strategies:
+            Strategy_name = "Iron Condor"
+            print("\t Processing ", Strategy_name, " Strategy")
+            iron_con_strat = list()
+            iron_con = list()
+    
+            call_1_pos = list(np.arange(chain.Call_total))
+            call_2_pos = list(np.arange(chain.Call_total))
+            put_1_pos = list(np.arange(chain.Put_total))
+            put_2_pos = list(np.arange(chain.Put_total))  
             
-        if len(double_fly_details)>0:
-            double_fly_df = pd.DataFrame(double_fly_details)
-            double_fly_df = double_fly_df.sort_values(by=["Prob of Profit"], ascending=False)
-            print("\t \t Added ", len(double_fly_details), " Strategies")
-
-    call_fly_df = pd.DataFrame()
-    if "Butterfly" in Strategies:
-        Strategy_name = "Butterfly"
-        print("\t Processing ", Strategy_name, " Strategy")
-        call_fly_strat = list()
-        call_fly = list()
-
-        call_1_pos = list(np.arange(chain.Call_total))
-        call_2_pos = list(np.arange(chain.Call_total))
-        call_3_pos = list(np.arange(chain.Call_total))
-        call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-        call_2_quantity = 20#list(np.arange(1,max_quantity_per_leg+1))
-        call_3_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-        
-        
-        
-        
-        bear_pos = np.zeros((0,3))
-        bear_strike = np.zeros((0,3))
-        
-        iterables = [call_1_pos,call_2_pos,call_3_pos]
-        for t in itertools.product(*iterables):
-            pos_1, pos_2, pos_3 = t
-            pos_cons = (chain.Call_Strike[pos_3]-chain.Call_Strike[pos_2]) == (chain.Call_Strike[pos_2]-chain.Call_Strike[pos_1]) 
-            if pos_1 < pos_2 and pos_2 < pos_3 and pos_cons:
-                allocation = np.zeros((chain.Call_total,2))
-                allocation[pos_1,0] = call_1_quantity
-                allocation[pos_2,0] = -1*call_2_quantity
-                allocation[pos_3,0] = call_3_quantity
-                strat = Strategy(allocation,chain,Strategy_name)
-                details = strat.summary()
-                # if details["Strategy_left_leg"]>0 :
-                call_fly_strat.append(strat)
-                call_fly.append(details)
-                                    
-                bear_pos = np.vstack((bear_pos,np.array([[pos_1,pos_2,pos_3]])))
-                bear_strike = np.vstack((bear_strike, np.array([[chain.Call_Strike[pos_1], chain.Call_Strike[pos_2], chain.Call_Strike[pos_3]]])))
-        
-        
+            call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            call_2_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            put_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
+            put_2_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
             
-        if len(call_fly)>0:
-            call_fly_df = pd.DataFrame(call_fly)
-            call_fly_df = call_fly_df.sort_values(by=["Prob of Profit"], ascending=False)
-
-            # Master_List_Strategies.append(bear_call_fly_strat)  
-            print("\t \t Added ", len(call_fly), " Strategies")
             
-    iron_con_df = pd.DataFrame()
-    if "Iron Condor" in Strategies:
-        Strategy_name = "Iron Condor"
-        print("\t Processing ", Strategy_name, " Strategy")
-        iron_con_strat = list()
-        iron_con = list()
-
-        call_1_pos = list(np.arange(chain.Call_total))
-        call_2_pos = list(np.arange(chain.Call_total))
-        put_1_pos = list(np.arange(chain.Put_total))
-        put_2_pos = list(np.arange(chain.Put_total))  
-        
-        call_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-        call_2_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-        put_1_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-        put_2_quantity = 10#list(np.arange(1,max_quantity_per_leg+1))
-        
-        
-        
-        
-        # bear_pos = np.zeros((0,3))
-        # bear_strike = np.zeros((0,3))
-        
-        iterables = [call_1_pos,call_2_pos,put_1_pos, put_2_pos]
-        for t in itertools.product(*iterables):
-            c_pos_1, c_pos_2, p_pos_1, p_pos_2 = t
-            pos_cons = (chain.Call_Strike[c_pos_2]-chain.Call_Strike[c_pos_1]) == (chain.Put_Strike[p_pos_2]-chain.Put_Strike[p_pos_1]) 
-            if c_pos_1 < c_pos_2 and p_pos_1 < p_pos_2 and p_pos_2<c_pos_1 and pos_cons:
-                allocation = np.zeros((chain.Call_total,2))
-                allocation[c_pos_1,0] = -1*call_1_quantity
-                allocation[c_pos_2,0] = call_2_quantity
-                allocation[p_pos_1,1] = put_1_quantity
-                allocation[p_pos_2,1] = -1*put_2_quantity
-                strat = Strategy(allocation,chain,Strategy_name)
-                details = strat.summary()
-                # if details["Strategy_left_leg"]>0 :
-                iron_con_strat.append(strat)
-                iron_con.append(details)
-                                    
-                # bear_pos = np.vstack((bear_pos,np.array([[pos_1,pos_2,pos_3]])))
-                # bear_strike = np.vstack((bear_strike, np.array([[chain.Call_Strike[pos_1], chain.Call_Strike[pos_2], chain.Call_Strike[pos_3]]])))
-        
-        
             
-        if len(iron_con)>0:
-            iron_con_df = pd.DataFrame(iron_con)
-            iron_con_df = iron_con_df.sort_values(by=["Prob of Profit"], ascending=False)
-
-            # Master_List_Strategies.append(bear_call_fly_strat)  
-            print("\t \t Added ", len(iron_con), " Strategies")
-
-    """
-    Append all strategies of Underlying
-    """
-    # All_Strategies.append(Master_List_Strategies)
-    if len(bull_call_fly_df)>0:
-        Bull_Fly_Summary.append(bull_call_fly_df)
-    else:
-        Bull_Fly_Summary.append(pd.DataFrame())
-    if len(bear_call_fly_df)>0:
-        Bear_Fly_Summary.append(bear_call_fly_df)
-    else:
-        Bear_Fly_Summary.append(pd.DataFrame())
+            
+            # bear_pos = np.zeros((0,3))
+            # bear_strike = np.zeros((0,3))
+            
+            iterables = [call_1_pos,call_2_pos,put_1_pos, put_2_pos]
+            for t in itertools.product(*iterables):
+                c_pos_1, c_pos_2, p_pos_1, p_pos_2 = t
+                pos_cons = (chain.Call_Strike[c_pos_2]-chain.Call_Strike[c_pos_1]) == (chain.Put_Strike[p_pos_2]-chain.Put_Strike[p_pos_1]) 
+                if c_pos_1 < c_pos_2 and p_pos_1 < p_pos_2 and p_pos_2<c_pos_1 and pos_cons:
+                    allocation = np.zeros((chain.Call_total,2))
+                    allocation[c_pos_1,0] = -1*call_1_quantity
+                    allocation[c_pos_2,0] = call_2_quantity
+                    allocation[p_pos_1,1] = put_1_quantity
+                    allocation[p_pos_2,1] = -1*put_2_quantity
+                    strat = Strategy(allocation,chain,Strategy_name)
+                    details = strat.summary()
+                    # if details["Strategy_left_leg"]>0 :
+                    iron_con_strat.append(strat)
+                    iron_con.append(details)
+                                        
+                    # bear_pos = np.vstack((bear_pos,np.array([[pos_1,pos_2,pos_3]])))
+                    # bear_strike = np.vstack((bear_strike, np.array([[chain.Call_Strike[pos_1], chain.Call_Strike[pos_2], chain.Call_Strike[pos_3]]])))
+            
+            
+                
+            if len(iron_con)>0:
+                iron_con_df = pd.DataFrame(iron_con)
+                iron_con_df = iron_con_df.sort_values(by=["Prob of Profit"], ascending=False)
     
-    if len(call_fly_df)>0:
-        Fly_Summary.append(call_fly_df)
-    else:
-        Fly_Summary.append(pd.DataFrame())
+                # Master_List_Strategies.append(bear_call_fly_strat)  
+                print("\t \t Added ", len(iron_con), " Strategies")
     
-    if len(iron_con_df)>0:
-        Iron_Con_Summary.append(iron_con_df)
-    else:
-        Iron_Con_Summary.append(pd.DataFrame())
-    
-    if len(double_fly_df)>0:
-        All_Strategies_Summary.append(double_fly_df)
-    else:
-        All_Strategies_Summary.append(pd.DataFrame())
-    
-
+        """
+        Append all strategies of Underlying
+        """
+        # All_Strategies.append(Master_List_Strategies)
+        if len(bull_call_fly_df)>0:
+            Bull_Fly_Summary.append(bull_call_fly_df)
+        else:
+            Bull_Fly_Summary.append(pd.DataFrame())
+        if len(bear_call_fly_df)>0:
+            Bear_Fly_Summary.append(bear_call_fly_df)
+        else:
+            Bear_Fly_Summary.append(pd.DataFrame())
         
-
-
-toc = datetime.now()
-
-print("\n Time Elapsed :", toc-tic)
+        if len(call_fly_df)>0:
+            Fly_Summary.append(call_fly_df)
+        else:
+            Fly_Summary.append(pd.DataFrame())
+        
+        if len(iron_con_df)>0:
+            Iron_Con_Summary.append(iron_con_df)
+        else:
+            Iron_Con_Summary.append(pd.DataFrame())
+        
+        if len(double_fly_df)>0:
+            All_Strategies_Summary.append(double_fly_df)
+        else:
+            All_Strategies_Summary.append(pd.DataFrame())
+        
     
-   
-
-
-if save_results == True:
-    for i in range(len(Assets)):
-        # df_main = All_Strategies_Summary[i]
-        df_bull = Bull_Fly_Summary[i]
-        df_bear = Bear_Fly_Summary[i]
-        df_fly = Fly_Summary[i]
-        df_iron_con = Iron_Con_Summary[i]
-        res_pred = predictions[i]
-        # if len(df_main.index)>=0:
-        min_strat = min(len(df_bull),len(df_bear))
-        if min_strat > 5:
-            outname = Assets[i]+".xlsx"
-            fullname = os.path.join(path, outname)   
-            with pd.ExcelWriter(fullname) as writer:
-                res_pred.to_excel(writer,sheet_name='Forecast', index=False)
-                df_iron_con.to_excel(writer,sheet_name= 'Iron Condor', index=False)
-                df_fly.to_excel(writer,sheet_name= 'Butterfly ', index=False)
-                df_bull.to_excel(writer,sheet_name='Bull Broken', index=False)
-                df_bear.to_excel(writer,sheet_name='Bear Broken', index=False)
-            # df_main.to_excel(writer,sheet_name='Double Broken', index=False)
-
-
-
-
-# chain = All_Option_Chains[0]
-# allocation = np.zeros((chain.Call_total,2))
-# allocation[1,1]= 10
-# allocation[25,1] = -20
-# allocation[32,1] = 10
-# #allocation[3,0] = -1
-# #allocation[4,0] = 1
-# opt_strategy = Strategy(allocation,chain,"New")
-# cost = opt_strategy.initial_cost()
-# # pnl = opt_strategy.final_pnl(100)
-# # payoff = opt_strategy.payoff(100)
-# # cos = -1*(pnl-payoff)
-
-# # prob = opt_strategy.prob_profit()
-
-# # #total_pnl  = opt_strategy.pnl_space()
-# # print("PnL at S_T :", pnl)
-# # print(cost)
-# # print(payoff)
-# # print(cos)
-# # print("Expected PnL :", opt_strategy.expected_pnl() )
-# opt_strategy.plot_pnl()
-
-#f= 1<2 and 3<4
+            
+    
+    
+    toc = datetime.now()
+    
+    print("\n Time Elapsed :", toc-tic)
+        
+       
+    
+    
+    if save_results == True:
+        for i in range(len(Assets)):
+            # df_main = All_Strategies_Summary[i]
+    
+            df_bull = Bull_Fly_Summary[i]
+            df_bear = Bear_Fly_Summary[i]
+            df_fly = Fly_Summary[i]
+            df_iron_con = Iron_Con_Summary[i]
+            res_pred = predictions[i]
+            res_pred_vol = predictions_vol[i]
+            # if len(df_main.index)>=0:
+            min_strat = min(len(df_bull),len(df_bear))
+            print(min_strat)
+            if min_strat >=10:
+                outname = Assets[i]+".xlsx"
+                fullname = os.path.join(path, outname)   
+                with pd.ExcelWriter(fullname) as writer:
+                    res_pred.to_excel(writer,sheet_name='Forecast', index=False)
+                    res_pred_vol.to_excel(writer,sheet_name='Volatility', index=False)
+                    df_iron_con.to_excel(writer,sheet_name= 'Iron Condor', index=False)
+                    df_bull.to_excel(writer,sheet_name='Bull Broken', index=False)
+                    df_bear.to_excel(writer,sheet_name='Bear Broken', index=False)
+                    df_fly.to_excel(writer,sheet_name= 'Butterfly ', index=False)
+                # df_main.to_excel(writer,sheet_name='Double Broken', index=False)
+    
+    
+    
+    
+    # chain = All_Option_Chains[0]
+    # allocation = np.zeros((chain.Call_total,2))
+    # allocation[1,1]= 10
+    # allocation[25,1] = -20
+    # allocation[32,1] = 10
+    # #allocation[3,0] = -1
+    # #allocation[4,0] = 1
+    # opt_strategy = Strategy(allocation,chain,"New")
+    # cost = opt_strategy.initial_cost()
+    # # pnl = opt_strategy.final_pnl(100)
+    # # payoff = opt_strategy.payoff(100)
+    # # cos = -1*(pnl-payoff)
+    
+    # # prob = opt_strategy.prob_profit()
+    
+    # # #total_pnl  = opt_strategy.pnl_space()
+    # # print("PnL at S_T :", pnl)
+    # # print(cost)
+    # # print(payoff)
+    # # print(cos)
+    # # print("Expected PnL :", opt_strategy.expected_pnl() )
+    # opt_strategy.plot_pnl()
+    
+    #f= 1<2 and 3<4
 
 
 
